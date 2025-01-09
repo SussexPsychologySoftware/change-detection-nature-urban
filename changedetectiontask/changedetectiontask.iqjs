@@ -612,8 +612,7 @@ else {
 
 **************************************************************************************************************
 				!!!REMAINING CODE: Customize after careful consideration only!!!
-**************************************************************************************************************
-
+*************************************************************************************************************
 
 **************************************************************************************************************
 **************************************************************************************************************
@@ -2909,11 +2908,68 @@ for (var i=1; i<values.n; i++) {
 / responseMessage = (anyResponse, shape.presentationSquare, 0)
 </trial>
 
+
+
+**************************************************************************************************************
+    VIDEO PARAMETERS AND STIMULI
+**************************************************************************************************************
+<parameters>
+/ videoCondition = "natural"    // Can be "natural" or "urban"
+</parameters>
+
+<video naturalVideo>
+/ items = (
+"..\\Videos\\Nature\\Nat_2.mp4", 
+"..\\Videos\\Nature\\Nat_3.mp4",
+"..\\Videos\\Nature\\Nat_8.mp4",
+"..\\Videos\\Nature\\Nat_14.mp4",
+"..\\Videos\\Nature\\Nat_15.mp4",
+"..\\Videos\\Nature\\Nat_16.mp4",
+"..\\Videos\\Nature\\Nat_18.mp4",
+"..\\Videos\\Nature\\Nat_Stat_5.mp4",
+"..\\Videos\\Nature\\Nat_Stat_6.mp4",
+"..\\Videos\\Nature\\Nat_Stat_7.mp4"
+)
+/ size = (80%, 80%)
+/ position = (50%, 50%)
+/ playThrough = true
+</video>
+
+<video urbanVideo>
+/ items = (
+"..\\Videos\\Urban\\Urb_1.mp4", 
+"..\\Videos\\Urban\\Urb_7.mp4",
+"..\\Videos\\Urban\\Urb_12.mp4",
+"..\\Videos\\Urban\\Urb_13.mp4",
+"..\\Videos\\Urban\\Urb_16.mp4",
+"..\\Videos\\Urban\\Urb_19.mp4",
+"..\\Videos\\Urban\\Urb_20.mp4",
+"..\\Videos\\Urban\\Urb_21.mp4",
+"..\\Videos\\Urban\\Urb_Stat_2.mp4",
+"..\\Videos\\Urban\\Urb_Stat_4.mp4",
+)
+/ size = (80%, 80%)
+/ position = (50%, 50%)
+/ playThrough = true
+</video>
+
+<trial videoBreak>
+/ ontrialbegin = {
+    video.naturalVideo.skip = (parameters.videoCondition != "natural");
+    video.urbanVideo.skip = (parameters.videoCondition == "natural");
+}
+/ validresponse = (" ")
+/ stimulusframes = [1 = naturalVideo, urbanVideo]
+/ recorddata = false
+/ timeout = 60000
+</trial>
+
 **************************************************************************************************************
 **************************************************************************************************************
 	BLOCKS
 **************************************************************************************************************
 **************************************************************************************************************
+
 
 <block intro>
 / trials = [1 = intro1]
@@ -2936,10 +2992,17 @@ for (var i=1; i<values.n; i++) {
 
 <block n4>
 / bgStim = (sameKeyReminder, differentKeyReminder)
-/ onBlockBegin = {values.n = 4; }
+/ onblockbegin = {values.n = 4;}
 / trials = [
-	1 = getReady;
-	2-61 = trial.n;
+    1 = getReady;
+    2 = videoBreak;
+    3 = videoBreak;
+    4 = videoBreak;
+    5-23 = trial.n;
+    24 = videoBreak;
+    25-43 = trial.n;
+    44 = videoBreak;
+    45-61 = trial.n
 ]
 </block>
 
@@ -2961,10 +3024,17 @@ for (var i=1; i<values.n; i++) {
 
 <block n6>
 / bgStim = (sameKeyReminder, differentKeyReminder)
-/ onBlockBegin = {values.n = 6; }
+/ onblockbegin = {values.n = 6;}
 / trials = [
-	1 = getReady;
-	2-61 = trial.n;
+    1 = getReady;
+    2 = videoBreak;
+    3 = videoBreak;
+    4 = videoBreak;
+    5-23 = trial.n;
+    24 = videoBreak;
+    25-43 = trial.n;
+    44 = videoBreak;
+    45-61 = trial.n
 ]
 </block>
 
@@ -2986,10 +3056,17 @@ for (var i=1; i<values.n; i++) {
 
 <block n8>
 / bgStim = (sameKeyReminder, differentKeyReminder)
-/ onBlockBegin = {values.n = 8; }
+/ onblockbegin = {values.n = 8;}
 / trials = [
-	1 = getReady;
-	2-61 = trial.n;
+    1 = getReady;
+    2 = videoBreak;
+    3 = videoBreak;
+    4 = videoBreak;
+    5-23 = trial.n;
+    24 = videoBreak;
+    25-43 = trial.n;
+    44 = videoBreak;
+    45-61 = trial.n
 ]
 </block>
 
@@ -3093,6 +3170,11 @@ debug blocks
 	15 = n8TestStart;
 	16 = n8;
 ]
+
+// FOR TESTING VIDEO
+///blocks = [
+//	1 = n4;
+//]
 </expt>
 
 
