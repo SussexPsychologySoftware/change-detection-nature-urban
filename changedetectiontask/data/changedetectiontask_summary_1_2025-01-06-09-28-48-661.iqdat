@@ -1,0 +1,2 @@
+inquisit.version	computer.platform	startDate	startTime	subjectId	groupId	sessionId	elapsedTime	completed	runFixedDesign	useOnlyArrayColorsForProbe	presentationSquareHeight	squareHeight	squareHeightMM	squareDistanceCheck	propCorrect	meanCorrRT	k4	n4HitRate	n4HitRT	n4CRRate	n4CRRT	k6	n6HitRate	n6HitRT	n6CRRate	n6CRRT	k8	n8HitRate	n8HitRT	n8CRRate	n8CRRT	kOverall
+7.0.3	mac	2025-01-06	09:28:48	1	1	1	96892	0	1	1	80pct	15pct	32.422352mm	1	0.75	942	1.8666666666666671	0.6666666666666666	1046	0.8	890	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan

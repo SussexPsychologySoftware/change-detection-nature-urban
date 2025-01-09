@@ -1,0 +1,3106 @@
+<userManual>
+___________________________________________________________________________________________________________________	
+
+											*Change Detection Task*
+___________________________________________________________________________________________________________________	
+
+Script Author: Katja Borchert, Ph.D. (katjab@millisecond.com) for Millisecond Software, LLC
+Date: 11-25-2020
+last updated:  09-30-2024 by K. Borchert (katjab@millisecond.com) for Millisecond Software, LLC
+
+Script Copyright ©  09-30-2024 Millisecond Software
+
+___________________________________________________________________________________________________________________
+BACKGROUND INFO 	
+___________________________________________________________________________________________________________________	
+
+This script implements a Change Detection Task, a measure of Visual Working Memory.
+The implemented procedure is based on Harris et al (2020).
+
+Reference:
+Harris, A.M et al (2020). Behavioral and electrophysiological evidence for a dissociation between 
+working memory capacity and feature-based attention. Cortex, 129, 158-174.
+(Change Task Description: p.160-161)
+
+___________________________________________________________________________________________________________________
+TASK DESCRIPTION	
+___________________________________________________________________________________________________________________	
+
+Participants view short displays of 4/6/8 colorful squares that are followed by a single probe square
+located in one of the display square's positions. Participants have to decide if the color of the probe
+is the same or different than the color of the square that previously sat in the probe's location.
+
+___________________________________________________________________________________________________________________	
+DURATION 
+___________________________________________________________________________________________________________________	
+the default set-up of the script takes appr. 12 minutes to complete
+___________________________________________________________________________________________________________________	
+DATA OUTPUT DICTIONARY
+___________________________________________________________________________________________________________________		
+The fields in the data files are:
+
+(1) Raw data file: 'changedetectiontask_raw*.iqdat' (a separate file for each participant)*
+
+build:								The specific Inquisit version used (the 'build') that was run
+computer.platform:					the platform the script was run on (win/mac/ios/android)
+date, time: 						date and time script was run 
+subject, group: 					with the current subject/groupnumber
+session:							with the current session id
+
+###Design Parameters
+runFixedDesign: true				true (1) = the fixed design (with default trial lists -> default square positionscolors) will be run
+									false (0) = the script will generate new lists (new square positioncolors) during runtime at the start of the script
+
+useOnlyArrayColorsForProbe:			true (1) = the color of the different probe is only sampled from the colors used in the preceding array
+									false (0) = the color of the different probe is sampled from all 6 colors (that are not used for the target square)
+
+presentationSquareHeight:			the proportional size of the 'invisible' gray presentation square relative to canvas height
+									Note: the default squares are presented in an 'invisible' gray square of size 80%
+									
+squareHeight:						the proportional size of the array squares relative to canvas height
+									Note: the default square locations were generated with 'squareHeight' = 15%	
+									
+squareHeightMM:					the absolute size (in mm) of the presented array squares on the current monitor		
+
+																		
+blockCode, blockNum:				the name and number of the current block (built-in Inquisit variable)
+trialCode, trialNum: 				the name and number of the currently recorded trial (built-in Inquisit variable)
+										Note: trialNum is a built-in Inquisit variable; it counts all trials run; even those
+										that do not store data to the data file. 
+										
+n:									the current number of squares presented (array size)
+index:								helper variable to select square positionscolors; default setting is by sequential selection
+
+trialType:							1 = same (probe color is the same as the color of the square that was presented in the same location)
+									2 = different (probe color is different from the color of the square that was presented in the same location)
+
+response:							scancode of response button
+									31 = S; 32 = D
+									
+responseCategory:					'same' or 'different' 
+
+correct:							1 = response was correct; 0 = response was incorrect 
+latency:							response time in ms; measured from onset of probe
+
+###the proportional square positions (horizontal: 0%(left)-100%(right); vertical: 0%(top) to 100%(bottom))
+x1, y1, 
+x2, y2,
+x3, y3,
+x4, y4,
+x5, y5,
+x6, y6,
+x7, y7,
+x8, y8,
+
+###square colors
+color1, color2, color3, color4,
+color5, color6, color7, color8,
+
+###probe:
+probe:								the square location that the probe occupies (for level4; 1-4; for level6: 1-6; for level8: 1-8)
+probeX:							the horizontal coordinate of the probe (should match with coordinates of the square location that the probe occupies)
+probeY:							the vertical coordinate of the probe (should match with coordinates of the square location that the probe occupies)
+probeColor:							the color of the probe
+
+
+###Square Distance Check Variables: store the distances btw. the individual array squares
+bufferPX:						the square distance buffer in pixels 
+bufferMM:						the square distance buffer converted into mm
+
+squareDistanceCheck: 				1 = all array square distances >= expressions.minDistPX
+									0 = at least one distance < expressions.minDistPX 
+									(should not happen but in some cases rounding errors might lead to 'false positive' alerts.
+									Squares might have overlapped if: pixel distance < (minDistPX-bufferPX) 
+									
+overlapSuccess:						similar to expressions.squareDistanceCheck, but 
+									pixel distance < (minDistPX-bufferPX)
+									0 = overlap 
+									1 = no overlap
+																																										
+minDistPX:						the minimum distance (in pixel) that squares should be apart
+minDistMM:						the minimum distance (in mm) that the square should be be apart
+
+d12-d78:							the pixel distance between each presented square
+									Example: d12 = pixel distance btw. center of square1 and center of square2
+									
+minObservedSquareDistancePX:	minimum observed pixel distance of the squares 
+maxObservedSquareDistancePX:	maximum observed pixel distance of the squares
+minObservedSquareDistanceMM:	minimum observed mm-distance of the squares 
+maxObservedSquareDistanceMM:	maximum observed mm-distance of the squares									
+
+
+(2) Summary data file: 'changedetectiontask_summary*.iqdat' (a separate file for each participant)*
+
+inquisit.version:					Inquisit version run
+computer.platform:					the platform the script was run on (win/mac/ios/android)
+startDate:							date script was run
+startTime:							time script was started
+subjectId:							assigned subject id number
+groupId:							assigned group id number
+sessionId:							assigned session id number
+elapsedTime:						time it took to run script (in ms); measured from onset to offset of script
+completed:							0 = script was not completed (prematurely aborted); 
+									1 = script was completed (all conditions run)
+
+###Parameters:									
+runFixedDesign: true				true (1) = the fixed design (with default trial lists -> default square positionscolors) will be run
+									false (0) = the script will generate new lists (new square positioncolors) during runtime at the start of the script
+
+useOnlyArrayColorsForProbe:			true (1) = the color of the different probe is only sampled from the colors used in the preceding array
+									false (0) = the color of the different probe is sampled from all 6 colors (that are not used for the target square)
+
+presentationSquareHeight:			the proportional size of the 'invisible' gray presentation square relative to canvas height
+									Note: the default squares are presented in an 'invisible' gray square of size 80%
+									
+squareHeight:						the proportional size of the array squares relative to canvas height
+									Note: the default square locations were generated with 'squareHeight' = 15%	
+									
+squareHeightMM:					the absolute size (in mm) of the presented array squares on the current monitor
+
+
+
+###Performance Data:										
+									
+propCorrect:						overall proportion correct (across all conditions)
+meanCorrRT:							mean response time (in ms) for correct responses; across all conditions
+
+k4:									K-score for level n trials calculated as = (n4HitRate + n4CRrate - 1)*4							 
+n4HitRate:							the HitRate for level n signal (=same) trials (hit = correctly responding that color was the same ) 
+n4HitRT:							the response time (in ms) for hits 
+n4CRRate:							the correct rejection rate for level n noise (=different) trials (CR = correctly responding that color was different) 
+n4CRRT:							the mean response time (in ms) for correct rejections
+
+(same for level6 and level8 trials)
+
+kOverall:							the unweighted mean of all three K-scores		
+							
+* separate data files: to change to one data file for all participants (on Inquisit Lab only), go to section
+"DATA" and follow further instructions
+
+___________________________________________________________________________________________________________________	
+EXPERIMENTAL SET-UP 
+___________________________________________________________________________________________________________________	
+
+3 array sizes (4, 6, 8) are tested in a blocked design. 
+- by default, all participants work from smallest (4) to largest (8) array size
+- by default all trial configurations (square locations/color, probe location/color) within an array size 
+are run in a fixed sequence* (see parameters.runFixedDesign under Editable Parameters)
+
+Each level:
+- 6 practice trials (fixed sequence) - half the trials present the probe in the same color
+- 60 test trials (fixed sequence) - half the trials present the probe in the same color
+- all trials provide feedback
+- probe Position: the position of the probe is randomly selected
+- Display Square Colors: the colors of the display squares are randomly selected (without replacement)
+from 7 possible colors:  "white", "black", "purple", "green", "red", "blue", yellow 
+(Note: for level8 trials, one randomly selected color is repeated) - see Harris et al (2020)
+- Probe Color: the probe color for 'different' trials is either 
+a) selected from the remaining 6 colors 
+(in which case the probe can have colors not presented during the display for level4/6 trials)
+b) selected from the remaining colors of the displayed squares (DEFAULT setting in this script, see Editable Parameters)
+
+Trial Sequence:
+- array presented for 150ms (editable parameter) in an 'invisible' gray square on a gray background
+- gray screen alone presented for 900ms (editable parameters) - retention interval
+- probe is presented until response 
+- iti (blank gray screen) with feedback is presented for 500ms (editable parameters)
+
+
+*Generation of default/fixed trial configurations:
+The default fixed trial configurations were generated with square sizes of size 15% canvasheight
+within a presentation square of 80% canvasheight size and a 'square buffer' of 2% of canvasheight
+
+TIP: to generate a new fixed sequence, you can run this script once with parameter.runFixedDesign = false
+and copy the randomly generated position/color data from the data file into the corresponding 
+position/color lists under section LISTS
+If needed:
+-> you can change the size of the 'invisible' gray presentationsquare under Editable Parameters 
+-> you can change the size of the display squares under Editable Parameters
+(Note: the max square size is 15%; this script automatically downsizes greater sizes to 15%)
+___________________________________________________________________________________________________________________
+STIMULI
+___________________________________________________________________________________________________________________
+
+The stimuli in this script are presented with proportional sizing relative to the active canvas.
+The active canvas determined for this script is the largest possible rectangle of width:height = 4:3
+that can be found on the current monitor. For square sizing check section Editable Parameters below.
+
+If absolute sizing is needed (stimuli should have the same absolute size across monitors), 
+check section DEFAULTS for more information.
+___________________________________________________________________________________________________________________	
+INSTRUCTIONS 
+___________________________________________________________________________________________________________________	
+provided by Millisecond Software - can be edited under section Editable Instructions
+___________________________________________________________________________________________________________________	
+EDITABLE CODE 
+___________________________________________________________________________________________________________________	
+check below for (relatively) easily editable parameters, stimuli, instructions etc. 
+Keep in mind that you can use this script as a template and therefore always "mess" with the entire code 
+to further customize your experiment.
+
+The parameters you can change are:
+
+</userManual>
+
+
+**************************************************************************************************************
+**************************************************************************************************************
+	EDITABLE PARAMETERS: change editable parameters here
+**************************************************************************************************************
+**************************************************************************************************************
+
+<parameters>
+//Design parameters
+/ runFixedDesign = true				//true = the fixed design (with default trial lists of default positions/colors) will be run (DEFAULT)
+									//false = the script will generate new lists of positions/colors during runtime at the start of the script
+									//Note: if set to false, the script might take some time at the start of the script to generate the lists (times will vary)
+
+/ useOnlyArrayColorsForProbe = true //true = the color of the 'different' probe is only sampled from the colors used in the preceding array (DEFAULT)
+								   //false = the color of the 'different' probe is sampled from all 6 colors (that are not used for the target square)
+
+//response keys
+/ leftResponseKey = "S"							// the left response key (Note: based on location of key on English keyboards)
+/ rightResponseKey = "D"							// the right response key (Note: based on location of key on English keyboards)
+/ sameKey = parameters.leftResponseKey       	//in this script the left response key is the correct key for same trials (probe's color matches the color of the target)
+/ differentKey = parameters.rightResponseKey	 	//in this script the right response key is the correct key for different trials (probe's color does not match the color of the target)	
+
+//Sizing parameters:
+/ presentationSquareHeight = 80%		//the proportional size of the 'invisible' array presentation square relative to canvas height (Note: 85% is the maximum)
+									//Note: the default squares were generated for an 'invisible' gray square of size 80%; Note: 80% is therefore the minimum size possible IF parameters.runFixedDesign = true)
+									
+/ squareHeight = 15%					//the proportional size of the display squares relative to canvas height (here: 15%)
+									//Note: the default square locations were generated with 'squareHeight' = 15% 
+									//15% is the MAX square size supported (bigger sizes will automatically be reduced to 15%)
+									//Smaller sizes can safely be used with default locations, 
+									//however minimum square distances are calculated based on a square size 15%
+									
+/ buffer = 2%						//the centers of squares have to be separated by 2 times the outer radius of one square plus the buffer
+									//outer radius: circle through corners of a square
+									//buffer: percent canvasheight
+									//!!!NOTES: 
+									//a) the buffer setting is ONLY relevant if parameters.runFixedDesign = false and new positions
+									//will be generated. However: If the the buffersize is too large, the script will have difficulty generating 
+									//positions for the different levels; for this reason the script imposes a 5% limit.
+									//b) the default settings were generated with a square of size 15% canvasheight and a buffer of 2% canvasheight
+
+//Duration parameters:
+/ readyDuration = 5000				//duration (in ms) of the get-ready trials
+/ arrayDuration = 150				//the duration (in ms) that the array of colored squares is presented	
+/ retentionInterval = 900			//the delay duration (in ms) after which the probe is presented	
+/ feedbackDuration = 500				//duration (in ms) of feedback stimulus before the next array is presented
+									//Note: feedback is presented immediately after a response is made
+
+</parameters>
+
+
+Note: the following included script is used to generate new square positions/colors if
+parameters.runFixedDesign == false
+<include>
+/ file = "changedetectiontask_generatepositions_inc.iqjs"
+</include>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	EDITABLE INSTRUCTIONS: change instructions here
+**************************************************************************************************************
+**************************************************************************************************************
+
+**************************************************
+intro screen 1
+**************************************************
+
+<text intro1>
+/ items = ("<h1>Introduction</h1><hr>
+In this task you will see brief displays of colorful squares.<br><br>
+Each display will be quickly followed by a single square that will occupy the same position as one of the previous display squares. This single square is called the <b>probe<b>.")
+/ fontStyle = ("Arial", 4%, false, false, false, false, 5, 1)
+/ position = (50%, 23%)
+/ erase = false
+</text>
+
+<shape displayDemoFrame>
+/ shape = rectangle
+/ size = (pct(41*0.75), 41%)
+/ color = black
+/ position = (50%, 63%)
+/ erase = false
+</shape>
+
+<video displayDemo>
+/ items = ("displaydemo.gif")
+/ size = (40%, 40%)
+/ position = (50%, 63%)
+/ loop = false
+/ playThrough = true
+/ erase = false
+</video>
+
+<text spacebarContinue>
+/ items = ("press [space] to continue")
+/ position = (75%, 90%)
+/ fontStyle = ("Arial", 3%, false, false, false, false, 5, 1)
+/ txBGColor = gray
+/ erase = false
+/ size = (30%, 4%)
+</text>
+
+<text repeat>
+/ items = ("press [R] to repeat the demo")
+/ position = (25%, 90%)
+/ fontStyle = ("Arial", 3%, false, false, false, false, 5, 1)
+/ txBGColor = gray
+/ erase = false
+/ size = (30%, 4%)
+</text>
+
+<trial intro1>
+/ stimulusFrames = [1 = clearScreen, canvas, intro1, displayDemoFrame, displayDemo, spacebarContinue, repeat]
+/ validResponse = ("R", " ")
+/ branch = {
+	if (this.responseText == "R" && !monkey.monkeyMode) {
+		return this;
+	} else {
+		return trial.intro2;
+	}
+}
+/ recordData = false
+</trial>
+
+**************************************************
+intro screen 2
+**************************************************
+
+<text intro2>
+/ items = ("<h1>Task</h1><hr>
+The probe <u>may or may not</u> have the same color as the display square that previously occupied the same location.
+It will be your task to decide if it did.<br><br>
+Press the <b><%parameters.sameKey%>-<%expressions.buttonInstruct1%></b> if the probe has the <u>same</u> color.<br>
+Press the <b><%parameters.differentKey%>-<%expressions.buttonInstruct1%></b> if the probe has a <u>different</u> color.")
+/ fontStyle = ("Arial", 4%, false, false, false, false, 5, 1)
+/ position = (50%, 25%)
+/ erase = false
+</text>
+
+<text goBack>
+/ items = ("press [B] to go back")
+/ position = (25%, 90%)
+/ fontStyle = ("Arial", 3%, false, false, false, false, 5, 1)
+/ txBGColor = gray
+/ erase = false
+/ size = (30%, 4%)
+</text>
+
+<trial intro2>
+/ stimulusFrames = [1 = clearScreen, canvas, intro2, spacebarContinue, goBack]
+/ validResponse = ("B", " ")
+/ branch = {
+	if (this.responseText == "B" && !monkey.monkeyMode) {
+		return trial.intro1;
+	} else {
+		return trial.intro3;
+	}
+}
+/ recordData = false
+</trial>
+
+**************************************************
+intro screen 3
+**************************************************
+
+<text intro3>
+/ items = ("<h1>Practice: 4 squares</h1><hr>
+Let's practice this task! All displays during practice will present 4 squares.<br>
+The computer will always tell you whether you responded correctly.<br><br>
+Start <b>the practice</b> when you are ready.")
+/ fontStyle = ("Arial", 4%, false, false, false, false, 5, 1)
+/ position = (50%, 20%)
+/ erase = false
+</text>
+
+<text spacebarStart>
+/ items = ("press [space] to START")
+/ position = (75%, 90%)
+/ fontStyle = ("Arial", 3%, false, false, false, false, 5, 1)
+/ txBGColor = lightgreen
+/ erase = false
+/ size = (30%, 4%)
+</text>
+
+<trial intro3>
+/ stimulusFrames = [1 = clearScreen, canvas, intro3, spacebarStart, goBack]
+/ validResponse = ("B", " ")
+/ branch = {
+	if (this.responseText == "B" && !monkey.monkeyMode) {
+		return trial.intro2;
+	} else {
+		return null;
+	}
+}
+/ recordData = false
+</trial>
+
+**************************************************
+n4: test info
+**************************************************
+
+<text n4TestIntro>
+/ items = ("<h1>Test: 4 squares</h1><hr>
+Practice is over and the actual task will begin. 
+Just like the practice, all displays will present 4 squares and the computer will let you know whether you responded correctly.<br><br>
+Start <b>the test</b> when you are ready.")
+/ fontStyle = ("Arial", 4%, false, false, false, false, 5, 1)
+/ position = (50%, 20%)
+/ erase = false
+</text>
+
+<trial n4TestIntro>
+/ stimulusFrames = [1 = clearScreen, canvas, n4TestIntro, spacebarStart]
+/ validResponse = (" ")
+/ recordData = false
+</trial>
+
+**************************************************
+n6: practice/test info
+**************************************************
+
+<text n6Practiceintro>
+/ items = ("<h1>Practice: 6 squares</h1><hr>
+The displays will now present <u>6 squares</u>. Otherwise, the task will stay the same as before.<br><br>
+Start <b>the practice</b> when you are ready.")
+/ fontStyle = ("Arial", 4%, false, false, false, false, 5, 1)
+/ position = (50%, 20%)
+/ erase = false
+</text>
+
+<trial n6Practiceintro>
+/ stimulusFrames = [1 = clearScreen, canvas, n6Practiceintro, spacebarStart]
+/ validResponse = (" ")
+/ recordData = false
+</trial>
+
+<text n6TestIntro>
+/ items = ("<h1>Test: 6 squares</h1><hr>
+Practice is over and the actual task will begin. All displays will present 6 squares just like during practice.<br><br>
+Start <b>the test</b> when you are ready.")
+/ fontStyle = ("Arial", 4%, false, false, false, false, 5, 1)
+/ position = (50%, 20%)
+/ erase = false
+</text>
+
+<trial n6TestIntro>
+/ stimulusFrames = [1 = clearScreen, canvas, n6TestIntro, spacebarStart]
+/ validResponse = (" ")
+/ recordData = false
+</trial>
+
+**************************************************
+n8: practice/test info
+**************************************************
+
+<text n8Practiceintro>
+/ items = ("<h1>Practice: 8 squares</h1><hr>
+The displays will now present <u>8 squares</u>. Otherwise, the task will stay the same as before.<br><br>
+Start <b>the practice</b> when you are ready.")
+/ fontStyle = ("Arial", 4%, false, false, false, false, 5, 1)
+/ position = (50%, 20%)
+/ erase = false
+</text>
+
+<trial n8Practiceintro>
+/ stimulusFrames = [1 = clearScreen, canvas, n8Practiceintro, spacebarStart]
+/ validResponse = (" ")
+/ recordData = false
+</trial>
+
+<text n8TestIntro>
+/ items = ("<h1>Test: 8 squares</h1><hr>
+Practice is over and the actual task will begin. All displays will present 8 squares just like during practice.<br><br>
+Start <b>the test</b> when you are ready.")
+/ fontStyle = ("Arial", 4%, false, false, false, false, 5, 1)
+/ position = (50%, 20%)
+/ erase = false
+</text>
+
+<trial n8TestIntro>
+/ stimulusFrames = [1 = clearScreen, canvas, n8TestIntro, spacebarStart]
+/ validResponse = (" ")
+/ recordData = false
+</trial>
+
+**************************************************
+remaining stims
+**************************************************
+
+<text sameKeyReminder>
+/ items = ("SAME = <%parameters.sameKey%>")
+/ fontStyle = ("Arial", 3%, false, false, false, false, 5, 1)
+/ size = (20%, 5%)
+/ vJustify = center
+/ vPosition = 95%
+/ erase = false
+/ txBGColor = gray
+</text>
+
+<text sameKeyReminderHL>
+/ items = ("SAME = <%parameters.sameKey%>")
+/ fontStyle = ("Arial", 3%, false, false, false, false, 5, 1)
+/ size = (20%, 5%)
+/ vJustify = center
+/ vPosition = 95%
+/ hPosition = text.sameKeyReminder.x
+/ erase = false
+/ txBGColor = yellow
+</text>
+
+<text differentKeyReminder>
+/ items = ("DIFFERENT = <%parameters.differentKey%>")
+/ fontStyle = ("Arial", 3%, false, false, false, false, 5, 1)
+/ size = (20%, 5%)
+/ vJustify = center
+/ vPosition = 95%
+/ txBGColor = gray
+/ erase = false
+</text>
+
+<text differentKeyReminderHL>
+/ items = ("DIFFERENT = <%parameters.differentKey%>")
+/ fontStyle = ("Arial", 3%, false, false, false, false, 5, 1)
+/ size = (20%, 5%)
+/ vJustify = center
+/ vPosition = 95%
+/ hPosition = text.differentKeyReminder.x
+/ txBGColor = yellow
+/ erase = false
+</text>
+
+<item feedback>
+/ 1 = "Incorrect"
+/ 2 = "Correct"
+</item>
+
+<text exit>
+/ items = ("<press spacebar to exit>")
+/ fontStyle = ("Arial", 3%, false, false, false, false, 5, 1)
+/ position = (50%, 90%)
+/ size = (80%, 5%)
+/ vJustify = center
+/ vAlign = center
+/ hAlign = center
+</text>
+
+
+*******************************
+General Helper Instructions
+******************************
+
+<text getReady>
+/ items = ("<center><h1>Get Ready!</h1><br><br>
+<%expressions.buttonInstruct2%></center>")
+/ fontStyle = ("Arial", 3.00%, false, false, false, false, 5, 1)
+</text>
+
+****************************************************************************************************
+general instruction expressions: adjust the instruction text depending on device used to run script
+****************************************************************************************************
+<expressions>
+/ buttonInstruct1 = if (computer.touch && !computer.hasKeyboard) {return "button";} else {return "key";}
+/ buttonInstruct2 = if (computer.touch && !computer.hasKeyboard) {
+	return "place your fingers over the <b><%parameters.leftResponseKey%></ b> and <b><%parameters.rightResponseKey%></ b> buttons";} 
+else {
+	return "place your fingers on the <b><%parameters.leftResponseKey%></ b> and <b><%parameters.rightResponseKey%></ b> keys";}
+</expressions>
+
+**************************************************************************************************************
+				!!!REMAINING CODE: Customize after careful consideration only!!!
+**************************************************************************************************************
+
+
+**************************************************************************************************************
+**************************************************************************************************************
+	DEFAULTS
+**************************************************************************************************************
+**************************************************************************************************************
+script requires Inquisit "7.0.0.0" or higher
+
+<defaults>
+/ canvasAspectRatio = (4,3)
+/ minimumVersion = "7.0.0.0"
+/ fontStyle = ("Arial", 3%, false, false, false, false, 5, 1)
+/ txBGColor = lightGray
+/ txColor = black
+/ screenColor = lightGray
+</defaults>
+
+TIP: if the sizing of the stimuli should be absolutely scaled
+
+(1) add a /canvassize = (200mm, 150mm) //use 'mm'
+IMPORTANT; the canvassize should conform to 'width : height = 4 : 3'
+
+(2) set the 'screencolor = black'
+=> the entire experiment will now be displayed in a gray rectangle of size 200mm x 150mm across monitors 
+and the  stimuli will be proportionally scaled to this size 
+(e.g. the squares of size 15% will end up being ~22mm across monitors). 
+The remaining part of the screen will be black (the amount of black will vary across monitors, 
+depending on size)
+
+NOTE: You may have to add some additional code to exclude monitors that are too small for the
+specified canvassize.
+
+**************************************************************************************************************
+**************************************************************************************************************
+	DATA
+**************************************************************************************************************
+**************************************************************************************************************
+
+Note: data file explanations under User Manual Information at the top
+
+To change from one data file per participant to one data file for all participants, set
+/separateFiles = false
+
+***********************
+raw data file
+***********************
+<data>
+/ columns = (build, computer.platform, date, time, subject, group, session, 
+parameters.runFixedDesign, parameters.useOnlyArrayColorsForProbe,
+parameters.presentationSquareHeight, parameters.squareHeight, expressions.squareHeightMM,
+blockCode, blockNum, trialCode, trialNum,  
+
+values.n, values.index, values.trialType, 
+response, values.responseCategory, correct, latency,
+
+values.x1, values.y1, 
+values.x2, values.y2,
+values.x3, values.y3,
+values.x4, values.y4,
+values.x5, values.y5,
+values.x6, values.y6,
+values.x7, values.y7,
+values.x8, values.y8,
+values.color1, values.color2, values.color3, values.color4,
+values.color5, values.color6, values.color7, values.color8,
+values.probe, values.probeX, values.probeY, values.probeColor,
+
+//Square Distance Checks:
+expressions.bufferPX, expressions.bufferMM,
+expressions.minDistPX, expressions.minDistMM,
+expressions.squareDistanceCheck, expressions.overlapSuccess,
+expressions.d12, expressions.d13,expressions.d14,expressions.d15,expressions.d16,expressions.d17, expressions.d18,
+expressions.d23,expressions.d24,expressions.d25,expressions.d26,expressions.d27,expressions.d28,
+expressions.d34,expressions.d35,expressions.d36,expressions.d37,expressions.d38,
+expressions.d45,expressions.d46,expressions.d47,expressions.d48,
+expressions.d56,expressions.d57,expressions.d58,
+expressions.d67,expressions.d68,
+expressions.d78,
+
+expressions.minObservedSquareDistancePX, expressions.maxObservedSquareDistancePX,
+expressions.minObservedSquareDistanceMM, expressions.maxObservedSquareDistanceMM)
+</data>
+
+***********************
+summary data file
+***********************
+<summaryData>
+/ columns = (inquisit.version, computer.platform, script.startDate, script.startTime, 
+script.subjectId, script.groupId, script.sessionId, 
+script.elapsedTime, script.completed, 
+parameters.runFixedDesign, parameters.useOnlyArrayColorsForProbe,
+parameters.presentationSquareHeight, parameters.squareHeight, expressions.squareHeightMM,expressions.squareDistanceCheck,
+
+expressions.propCorrect, expressions.meanCorrRT,
+expressions.k4, expressions.n4HitRate, expressions.n4HitRT, expressions.n4CRRate, expressions.n4CRRT,
+expressions.k6, expressions.n6HitRate, expressions.n6HitRT, expressions.n6CRRate, expressions.n6CRRT,
+expressions.k8, expressions.n8HitRate, expressions.n8HitRT, expressions.n8CRRate, expressions.n8CRRT,
+expressions.kOverall)
+</summaryData>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	VALUES: automatically updated
+**************************************************************************************************************
+**************************************************************************************************************
+
+<values>
+/ n = ""
+
+/ x1 = ""
+/ y1 = ""
+/ x2 = ""
+/ y2 = ""
+/ x3 = ""
+/ y3 = ""
+/ x4 = ""
+/ y4 = ""
+/ x5 = ""
+/ y5 = ""
+/ x6 = ""
+/ y6 = ""
+/ x7 = ""
+/ y7 = ""
+/ x8 = ""
+/ y8 = ""
+
+/ index = 0
+
+/ color = ""
+/ color1 = ""
+/ color2 = ""
+/ color3 = ""
+/ color4 = ""
+/ color5 = ""
+/ color6 = ""
+/ color7 = ""
+/ color8 = ""
+
+/ probe = 0
+/ probeX = ""
+/ probeY = ""
+/ probeColor = ""
+/ trialType = 0
+/ feedback = 0
+
+/ responseCategory = ""
+/ validDistance = ""
+</values>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	EXPRESSIONS
+**************************************************************************************************************
+**************************************************************************************************************
+To estimate WMC based on the Change Detection task, we
+calculated K scores using the standard formula K = (H + cr-1)*n
+n, where H is the hit rate, cr is the correct rejection rate, and
+n is the array size (
+//summary variables:
+<expressions>
+/ propCorrect = return list.acc.mean
+/ meanCorrRT = return list.corrRT.mean
+
+/ n4HitRate = return list.hitsN4.mean
+/ n4HitRT = return list.hitsRTN4.mean
+/ n4CRRate = return list.crN4.mean
+/ n4CRRT = return list.crRTN4.mean
+/ k4 = return (expressions.n4HitRate + expressions.n4CRRate - 1)*4
+
+/ n6HitRate = return list.hitsN6.mean
+/ n6HitRT = return list.hitsRTN6.mean
+/ n6CRRate = return list.crN6.mean
+/ n6CRRT = return list.crRTN6.mean
+/ k6 = return (expressions.n6HitRate + expressions.n6CRRate - 1)*6
+
+/ n8HitRate = return list.hitsN8.mean
+/ n8HitRT = return list.hitsRTN8.mean
+/ n8CRRate = return list.crN8.mean
+/ n8CRRT = return list.crRTN8.mean
+/ k8 = return (expressions.n8HitRate + expressions.n8CRRate - 1)*8
+
+/ kOverall = return (expressions.k4 + expressions.k6 + expressions.k8)
+/ 3 / minObservedSquareDistancePX = return list.squareDistances.minimum
+/ maxObservedSquareDistancePX = return list.squareDistances.maximum
+/ minObservedSquareDistanceMM = return display.getMMY(expressions.minObservedSquareDistancePX)
+/ maxObservedSquareDistanceMM = return display.getMMY(expressions.maxObservedSquareDistancePX)
+
+/ squareHeightMM = return display.getMMY(display.getPixelsY(parameters.squareHeight))
+</expressions>
+
+//other functions:
+<expressions>
+/ colorConversion = {
+	if (values.color == "yellow"){
+		return "yellow";
+	} else if (values.color == "blue"){
+		return "blue";
+	} else if (values.color == "green"){
+		return "green";
+	} else if (values.color == "red"){
+		return "red";
+	} else if (values.color == "purple"){
+		return "purple";
+	} else if (values.color == "white"){
+		return "white";
+	} else if (values.color == black){
+		return "black";
+	}
+}
+//debug expressions: calculate the pixel distance between square centers
+
+/ minDistPX = {
+		if (!parameters.runFixedDesign){
+			return floor(expressions.minimumTargetDistance);
+		} else {
+			return floor((2*sqrt((display.getPixelsY(15%/2)*display.getPixelsY(15%/2)) + (display.getPixelsY(15%/2)*display.getPixelsY(15%/2))))+ display.getPixelsY(2%))                                                                     
+		}
+}
+/ minDistMM = display.getMMY(expressions.minDistPX)
+
+/ d12 = {
+	if (values.n > 0){
+	return ceil(sqrt(
+	(display.getPixelsX(values.x1) - display.getPixelsX(values.x2))*(display.getPixelsX(values.x1) - display.getPixelsX(values.x2)) 
+	+ (display.getPixelsY(values.y1) - display.getPixelsY(values.y2))*(display.getPixelsY(values.y1) - display.getPixelsY(values.y2))
+	))} else {
+		return ""
+	}
+}
+/ d13 = {
+	if (values.n > 0){
+	return ceil(sqrt(
+	(display.getPixelsX(values.x1) - display.getPixelsX(values.x3))*(display.getPixelsX(values.x1) - display.getPixelsX(values.x3)) 
+	+ (display.getPixelsY(values.y1) - display.getPixelsY(values.y3))*(display.getPixelsY(values.y1) - display.getPixelsY(values.y3))
+	))} else {
+		return ""
+	}
+}
+/ d14 = {
+	if (values.n > 0){
+	return ceil(sqrt(
+	(display.getPixelsX(values.x1) - display.getPixelsX(values.x4))*(display.getPixelsX(values.x1) - display.getPixelsX(values.x4)) 
+	+ (display.getPixelsY(values.y1) - display.getPixelsY(values.y4))*(display.getPixelsY(values.y1) - display.getPixelsY(values.y4))
+	))} else {
+		return ""
+	}
+}
+/ d15 = {
+	if (values.n > 4){
+	return ceil(sqrt(
+		(display.getPixelsX(values.x1) - display.getPixelsX(values.x5))*(display.getPixelsX(values.x1) - display.getPixelsX(values.x5)) 
+		+ (display.getPixelsY(values.y1) - display.getPixelsY(values.y5))*(display.getPixelsY(values.y1) - display.getPixelsY(values.y5))
+		))		
+	} else {
+		return ""
+	}
+}
+/ d16 = {
+	if (values.n > 4){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x1) - display.getPixelsX(values.x6))*(display.getPixelsX(values.x1) - display.getPixelsX(values.x6)) 
+		+ (display.getPixelsY(values.y1) - display.getPixelsY(values.y6))*(display.getPixelsY(values.y1) - display.getPixelsY(values.y6))
+		))		
+	} else {
+		return ""
+	}
+} 
+/ d17 = {
+	if (values.n > 6){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x1) - display.getPixelsX(values.x7))*(display.getPixelsX(values.x1) - display.getPixelsX(values.x7)) 
+		+ (display.getPixelsY(values.y1) - display.getPixelsY(values.y7))*(display.getPixelsY(values.y1) - display.getPixelsY(values.y7))
+		))			
+	} else {
+		return ""
+	}
+} 
+/ d18 = {
+	if (values.n > 6){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x1) - display.getPixelsX(values.x8))*(display.getPixelsX(values.x1) - display.getPixelsX(values.x8)) 
+		+ (display.getPixelsY(values.y1) - display.getPixelsY(values.y8))*(display.getPixelsY(values.y1) - display.getPixelsY(values.y8))
+		))		
+	} else {
+		return ""
+	}
+} 
+
+/ d23 = {if (values.n > 0){
+	return ceil(sqrt(
+	(display.getPixelsX(values.x2) - display.getPixelsX(values.x3))*(display.getPixelsX(values.x2) - display.getPixelsX(values.x3)) 
+	+ (display.getPixelsY(values.y2) - display.getPixelsY(values.y3))*(display.getPixelsY(values.y2) - display.getPixelsY(values.y3))
+	))} else {
+		return ""
+	}
+}
+/ d24 = {
+	if (values.n > 0){
+	return ceil(sqrt(
+	(display.getPixelsX(values.x2) - display.getPixelsX(values.x4))*(display.getPixelsX(values.x2) - display.getPixelsX(values.x4)) 
+	+ (display.getPixelsY(values.y2) - display.getPixelsY(values.y4))*(display.getPixelsY(values.y2) - display.getPixelsY(values.y4))
+	))} else {
+		return ""
+	}
+}
+/ d25 = {
+	if (values.n > 4){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x2) - display.getPixelsX(values.x5))*(display.getPixelsX(values.x2) - display.getPixelsX(values.x5)) 
+		+ (display.getPixelsY(values.y2) - display.getPixelsY(values.y5))*(display.getPixelsY(values.y2) - display.getPixelsY(values.y5))
+		))		
+	} else {
+		return ""
+	}
+}
+/ d26 = {
+	if (values.n > 4){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x2) - display.getPixelsX(values.x6))*(display.getPixelsX(values.x2) - display.getPixelsX(values.x6)) 
+		+ (display.getPixelsY(values.y2) - display.getPixelsY(values.y6))*(display.getPixelsY(values.y2) - display.getPixelsY(values.y6))
+		))		
+	} else {
+		return ""
+	}
+} 
+/ d27 = {
+	if (values.n > 6){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x2) - display.getPixelsX(values.x7))*(display.getPixelsX(values.x2) - display.getPixelsX(values.x7)) 
+		+ (display.getPixelsY(values.y2) - display.getPixelsY(values.y7))*(display.getPixelsY(values.y2) - display.getPixelsY(values.y7))
+		))			
+	} else {
+		return ""
+	}
+} 
+/ d28 = {
+	if (values.n > 6){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x2) - display.getPixelsX(values.x8))*(display.getPixelsX(values.x2) - display.getPixelsX(values.x8)) 
+		+ (display.getPixelsY(values.y2) - display.getPixelsY(values.y8))*(display.getPixelsY(values.y2) - display.getPixelsY(values.y8))
+		))		
+	} else {
+		return ""
+	}
+} 
+
+/ d34 = {
+	if (values.n > 0){
+	return ceil(sqrt(
+	(display.getPixelsX(values.x3) - display.getPixelsX(values.x4))*(display.getPixelsX(values.x3) - display.getPixelsX(values.x4)) 
+	+ (display.getPixelsY(values.y3) - display.getPixelsY(values.y4))*(display.getPixelsY(values.y3) - display.getPixelsY(values.y4))
+	))} else {
+		return ""
+	}
+}
+/ d35 = {
+	if (values.n > 4){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x3) - display.getPixelsX(values.x5))*(display.getPixelsX(values.x3) - display.getPixelsX(values.x5)) 
+		+ (display.getPixelsY(values.y3) - display.getPixelsY(values.y5))*(display.getPixelsY(values.y3) - display.getPixelsY(values.y5))
+		))		
+	} else {
+		return ""
+	}
+}
+/ d36 = {
+	if (values.n > 4){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x3) - display.getPixelsX(values.x6))*(display.getPixelsX(values.x3) - display.getPixelsX(values.x6)) 
+		+ (display.getPixelsY(values.y3) - display.getPixelsY(values.y6))*(display.getPixelsY(values.y3) - display.getPixelsY(values.y6))
+		))		
+	} else {
+		return ""
+	}
+} 
+/ d37 = {
+	if (values.n > 6){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x3) - display.getPixelsX(values.x7))*(display.getPixelsX(values.x3) - display.getPixelsX(values.x7)) 
+		+ (display.getPixelsY(values.y3) - display.getPixelsY(values.y7))*(display.getPixelsY(values.y3) - display.getPixelsY(values.y7))
+		))			
+	} else {
+		return ""
+	}
+} 
+/ d38 = {
+	if (values.n > 6){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x3) - display.getPixelsX(values.x8))*(display.getPixelsX(values.x3) - display.getPixelsX(values.x8)) 
+		+ (display.getPixelsY(values.y3) - display.getPixelsY(values.y8))*(display.getPixelsY(values.y3) - display.getPixelsY(values.y8))
+		))		
+	} else {
+		return ""
+	}
+} 
+
+/ d45 = {
+	if (values.n > 4){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x4) - display.getPixelsX(values.x5))*(display.getPixelsX(values.x4) - display.getPixelsX(values.x5)) 
+		+ (display.getPixelsY(values.y4) - display.getPixelsY(values.y5))*(display.getPixelsY(values.y4) - display.getPixelsY(values.y5))
+		))		
+	} else {
+		return ""
+	}
+}
+/ d46 = {
+	if (values.n > 4){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x4) - display.getPixelsX(values.x6))*(display.getPixelsX(values.x4) - display.getPixelsX(values.x6)) 
+		+ (display.getPixelsY(values.y4) - display.getPixelsY(values.y6))*(display.getPixelsY(values.y4) - display.getPixelsY(values.y6))
+		))		
+	} else {
+		return ""
+	}
+} 
+/ d47 = {
+	if (values.n > 6){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x4) - display.getPixelsX(values.x7))*(display.getPixelsX(values.x4) - display.getPixelsX(values.x7)) 
+		+ (display.getPixelsY(values.y4) - display.getPixelsY(values.y7))*(display.getPixelsY(values.y4) - display.getPixelsY(values.y7))
+		))			
+	} else {
+		""
+	}
+} 
+/ d48 = {
+	if (values.n > 6){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x4) - display.getPixelsX(values.x8))*(display.getPixelsX(values.x4) - display.getPixelsX(values.x8)) 
+		+ (display.getPixelsY(values.y4) - display.getPixelsY(values.y8))*(display.getPixelsY(values.y4) - display.getPixelsY(values.y8))
+		))		
+	} else {
+		return ""
+	}
+} 
+
+
+/ d56 = {
+	if (values.n > 4){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x5) - display.getPixelsX(values.x6))*(display.getPixelsX(values.x5) - display.getPixelsX(values.x6)) 
+		+ (display.getPixelsY(values.y5) - display.getPixelsY(values.y6))*(display.getPixelsY(values.y5) - display.getPixelsY(values.y6))
+		))		
+	} else {
+		return ""
+	}
+} 
+/ d57 = {
+	if (values.n > 6){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x5) - display.getPixelsX(values.x7))*(display.getPixelsX(values.x5) - display.getPixelsX(values.x7)) 
+		+ (display.getPixelsY(values.y5) - display.getPixelsY(values.y7))*(display.getPixelsY(values.y5) - display.getPixelsY(values.y7))
+		))			
+	} else {
+		return ""
+	}
+} 
+/ d58 = {
+	if (values.n > 6){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x5) - display.getPixelsX(values.x8))*(display.getPixelsX(values.x5) - display.getPixelsX(values.x8)) 
+		+ (display.getPixelsY(values.y5) - display.getPixelsY(values.y8))*(display.getPixelsY(values.y5) - display.getPixelsY(values.y8))
+		))		
+	} else {
+		return ""
+	}
+} 
+
+/ d67 = {
+	if (values.n > 6){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x6) - display.getPixelsX(values.x7))*(display.getPixelsX(values.x6) - display.getPixelsX(values.x7)) 
+		+ (display.getPixelsY(values.y6) - display.getPixelsY(values.y7))*(display.getPixelsY(values.y6) - display.getPixelsY(values.y7))
+		))			
+	} else {
+		return ""
+	}
+} 
+/ d68 = {
+	if (values.n > 6){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x6) - display.getPixelsX(values.x8))*(display.getPixelsX(values.x6) - display.getPixelsX(values.x8)) 
+		+ (display.getPixelsY(values.y6) - display.getPixelsY(values.y8))*(display.getPixelsY(values.y6) - display.getPixelsY(values.y8))
+		))		
+	} else {
+		return ""
+	}
+} 
+
+/ d78 = {
+	if (values.n > 6){
+		return ceil(sqrt(
+		(display.getPixelsX(values.x7) - display.getPixelsX(values.x8))*(display.getPixelsX(values.x7) - display.getPixelsX(values.x8)) 
+		+ (display.getPixelsY(values.y7) - display.getPixelsY(values.y8))*(display.getPixelsY(values.y7) - display.getPixelsY(values.y8))
+		))		
+	} else {
+		return ""
+	}
+}
+ 
+/ minDistanceWithoutBufferPX = return (expressions.minDistPX - expressions.bufferPX)
+ 
+//squareDistanceCheck returns 0 if any of the distances is smaller than the allowed minimum distance btw. square centers
+/ squareDistanceCheck = {
+	if (values.n == 4){
+		return ((expressions.d12 >= expressions.minDistPX) * (expressions.d13 >= expressions.minDistPX) * 
+		(expressions.d14 >= expressions.minDistPX) * (expressions.d23 >= expressions.minDistPX) * 
+		(expressions.d24 >= expressions.minDistPX) * (expressions.d34 >= expressions.minDistPX))	
+	} else if (values.n == 6){
+		return ((expressions.d12 >= expressions.minDistPX) * (expressions.d13 >= expressions.minDistPX) * 
+		(expressions.d14 >= expressions.minDistPX) * (expressions.d15 >= expressions.minDistPX) * 		
+		(expressions.d16 >= expressions.minDistPX) * 
+		(expressions.d23 >= expressions.minDistPX) * (expressions.d24 >= expressions.minDistPX) * 
+		(expressions.d25 >= expressions.minDistPX) * (expressions.d26 >= expressions.minDistPX) * 
+		(expressions.d34 >= expressions.minDistPX) * (expressions.d35 >= expressions.minDistPX) * 
+		(expressions.d36 >= expressions.minDistPX) *	
+		(expressions.d45 >= expressions.minDistPX) * (expressions.d46 >= expressions.minDistPX) * 
+		(expressions.d56 >= expressions.minDistPX)) 		
+	} else if (values.n == 8){
+		return ((expressions.d12 >= expressions.minDistPX) * (expressions.d13 >= expressions.minDistPX) * 
+		(expressions.d14 >= expressions.minDistPX) * (expressions.d15 >= expressions.minDistPX) * 		
+		(expressions.d16 >= expressions.minDistPX) * (expressions.d17 >= expressions.minDistPX) *
+		(expressions.d18 >= expressions.minDistPX) *
+		
+		(expressions.d23 >= expressions.minDistPX) * (expressions.d24 >= expressions.minDistPX) * 
+		(expressions.d25 >= expressions.minDistPX) * (expressions.d26 >= expressions.minDistPX) * 
+		(expressions.d27 >= expressions.minDistPX) * (expressions.d28 >= expressions.minDistPX) *	
+		
+		(expressions.d34 >= expressions.minDistPX) * (expressions.d35 >= expressions.minDistPX) * 
+		(expressions.d36 >= expressions.minDistPX) * (expressions.d37 >= expressions.minDistPX) *
+		(expressions.d38 >= expressions.minDistPX) *
+	
+		(expressions.d45 >= expressions.minDistPX) * (expressions.d46 >= expressions.minDistPX) * 
+		(expressions.d47 >= expressions.minDistPX) * (expressions.d48 >= expressions.minDistPX) * 		
+		
+		(expressions.d56 >= expressions.minDistPX) * 	(expressions.d57 >= expressions.minDistPX) *
+		(expressions.d58 >= expressions.minDistPX) *	
+	
+		(expressions.d67 >= expressions.minDistPX) * (expressions.d68 >= expressions.minDistPX) * 		
+		
+		(expressions.d78 >= expressions.minDistPX))		
+	}
+}
+
+/ overlapSuccess = {
+	if (values.n == 4){
+		return ((expressions.d12 >= expressions.minDistanceWithoutBufferPX) * (expressions.d13 >= expressions.minDistanceWithoutBufferPX) * 
+		(expressions.d14 >= expressions.minDistanceWithoutBufferPX) * (expressions.d23 >= expressions.minDistanceWithoutBufferPX) * 
+		(expressions.d24 >= expressions.minDistanceWithoutBufferPX) * (expressions.d34 >= expressions.minDistanceWithoutBufferPX))	
+	} else if (values.n == 6){
+		return ((expressions.d12 >= expressions.minDistanceWithoutBufferPX) * (expressions.d13 >= expressions.minDistanceWithoutBufferPX) * 
+		(expressions.d14 >= expressions.minDistanceWithoutBufferPX) * (expressions.d15 >= expressions.minDistanceWithoutBufferPX) * 		
+		(expressions.d16 >= expressions.minDistanceWithoutBufferPX) * 
+		(expressions.d23 >= expressions.minDistanceWithoutBufferPX) * (expressions.d24 >= expressions.minDistanceWithoutBufferPX) * 
+		(expressions.d25 >= expressions.minDistanceWithoutBufferPX) * (expressions.d26 >= expressions.minDistanceWithoutBufferPX) * 
+		(expressions.d34 >= expressions.minDistanceWithoutBufferPX) * (expressions.d35 >= expressions.minDistanceWithoutBufferPX) * 
+		(expressions.d36 >= expressions.minDistanceWithoutBufferPX) *	
+		(expressions.d45 >= expressions.minDistanceWithoutBufferPX) * (expressions.d46 >= expressions.minDistanceWithoutBufferPX) * 
+		(expressions.d56 >= expressions.minDistanceWithoutBufferPX))		
+	} else if (values.n == 8){
+		return ((expressions.d12 >= expressions.minDistanceWithoutBufferPX) * (expressions.d13 >= expressions.minDistanceWithoutBufferPX) * 
+		(expressions.d14 >= expressions.minDistanceWithoutBufferPX) * (expressions.d15 >= expressions.minDistanceWithoutBufferPX)	* 		
+		(expressions.d16 >= expressions.minDistanceWithoutBufferPX) * (expressions.d17 >= expressions.minDistanceWithoutBufferPX) *
+		(expressions.d18 >= expressions.minDistanceWithoutBufferPX) *
+		
+		(expressions.d23 >= expressions.minDistanceWithoutBufferPX) * (expressions.d24 >= expressions.minDistanceWithoutBufferPX) * 
+		(expressions.d25 >= expressions.minDistanceWithoutBufferPX) * (expressions.d26 >= expressions.minDistanceWithoutBufferPX) * 
+		(expressions.d27 >= expressions.minDistanceWithoutBufferPX) * (expressions.d28 >= expressions.minDistanceWithoutBufferPX)	*	
+		
+		(expressions.d34 >= expressions.minDistanceWithoutBufferPX) * (expressions.d35 >= expressions.minDistanceWithoutBufferPX) * 
+		(expressions.d36 >= expressions.minDistanceWithoutBufferPX) * (expressions.d37 >= expressions.minDistanceWithoutBufferPX) *
+		(expressions.d38 >= expressions.minDistanceWithoutBufferPX) *
+	
+		(expressions.d45 >= expressions.minDistanceWithoutBufferPX) * (expressions.d46 >= expressions.minDistanceWithoutBufferPX) * 
+		(expressions.d47 >= expressions.minDistanceWithoutBufferPX) * (expressions.d48 >= expressions.minDistanceWithoutBufferPX) * 		
+		
+		(expressions.d56 >= expressions.minDistanceWithoutBufferPX) * 	(expressions.d57 >= expressions.minDistanceWithoutBufferPX) *
+		(expressions.d58 >= expressions.minDistanceWithoutBufferPX) *	
+	
+		(expressions.d67 >= expressions.minDistanceWithoutBufferPX) * (expressions.d68 >= expressions.minDistanceWithoutBufferPX) * 		
+		
+		(expressions.d78 >= expressions.minDistanceWithoutBufferPX))	
+	}
+}
+</expressions>
+
+
+
+**************************************************************************************************************
+**************************************************************************************************************
+	INSTRUCTIONS
+**************************************************************************************************************
+**************************************************************************************************************
+
+*************************************
+General Helper Instruction Trials/Blocks
+*************************************
+
+This trial is used when participants are asked to place their fingers on specific response
+buttons. On the touchscreen, this trial presents the (inactive) response buttons to the participants.
+<trial getReady>
+/ stimulusFrames = [1 = clearScreen, canvas, getReady, differentKeyReminder, sameKeyReminder]
+/ timeout = parameters.readyDuration
+/ validResponse = (parameters.leftResponseKey, parameters.rightResponseKey)
+/ isValidResponse = {
+	return false;
+}
+/ errorMessage = false
+/ recordData = false
+/ postTrialPause = parameters.feedbackDuration
+/ responseMessage = (noResponse, shape.presentationSquare, 0)
+</trial>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	STIMULI
+**************************************************************************************************************
+**************************************************************************************************************
+
+<shape presentationSquare>
+/ shape = rectangle
+/ size = (pct(parameters.presentationSquareHeight*0.75), parameters.presentationSquareHeight)
+/ color = lightGray
+/ erase = false
+/ position = (50%, 50%)
+</shape>
+
+<shape probe>
+/ shape = rectangle
+/ size = (pct(parameters.squareHeight*0.75), parameters.squareHeight)
+/ position = (values.probeX, values.probeY)
+/ color = values.probeColor
+/ erase = false
+</shape>
+
+<shape target1>
+/ shape = rectangle
+/ size = (pct(parameters.squareHeight*0.75), parameters.squareHeight)
+/ color = values.color1
+/ position = (values.x1, values.y1)
+/ erase = false
+</shape>
+
+<shape target2>
+/ shape = rectangle
+/ size = (pct(parameters.squareHeight*0.75), parameters.squareHeight)
+/ color = values.color2
+/ position = (values.x2, values.y2)
+/ erase = false
+</shape>
+
+<shape target3>
+/ shape = rectangle
+/ size = (pct(parameters.squareHeight*0.75), parameters.squareHeight)
+/ color = values.color3
+/ position = (values.x3, values.y3)
+/ erase = false
+</shape>
+
+<shape target4>
+/ shape = rectangle
+/ size = (pct(parameters.squareHeight*0.75), parameters.squareHeight)
+/ color = values.color4
+/ position = (values.x4, values.y4)
+/ erase = false
+</shape>
+
+<shape target5>
+/ shape = rectangle
+/ size = (pct(parameters.squareHeight*0.75), parameters.squareHeight)
+/ color = values.color5
+/ position = (values.x5, values.y5)
+/ erase = false
+</shape>
+
+<shape target6>
+/ shape = rectangle
+/ size = (pct(parameters.squareHeight*0.75), parameters.squareHeight)
+/ color = values.color6
+/ position = (values.x6, values.y6)
+/ erase = false
+</shape>
+
+<shape target7>
+/ shape = rectangle
+/ size = (pct(parameters.squareHeight*0.75), parameters.squareHeight)
+/ color = values.color7
+/ position = (values.x7, values.y7)
+/ erase = false
+</shape>
+
+<shape target8>
+/ shape = rectangle
+/ size = (pct(parameters.squareHeight*0.75), parameters.squareHeight)
+/ color = values.color8
+/ position = (values.x8, values.y8)
+/ erase = false
+</shape>
+
+<text feedback>
+/ onPrepare = {
+	if (values.feedback == 0) {//0-based selection
+		this.textColor = red;
+} else {
+	this.textColor = green;
+}
+}
+/ items = feedback
+/ select = values.feedback
+/ fontStyle = ("Arial", 8%, true, false, false, false, 5, 1)
+/ position = (50%, 50%)
+/ vJustify = center
+/ txBGColor = transparent
+/ erase = false
+/ size = (50%, 9%)
+/ hJustify = center
+</text>
+
+//helper stimulus in case absolute sizing of display is needed
+//if absolute sizing is needed, this stimulus will provide the
+//lightGray background while the actual screen color can be black 
+//thus the absolute canvas will be AND appear the same size across
+//monitors
+<shape canvas>
+/ shape = rectangle
+/ size = (100%, 100%)
+/ color = lightGray
+/ erase = false
+</shape>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	LISTS	
+**************************************************************************************************************
+**************************************************************************************************************
+
+**************************************************************
+	DEFAULT POSITION LISTS: 
+**************************************************************
+
+************************************
+PRACTICE
+
+n = 4, data for 6 practice trials
+************************************
+
+<list practiceN4Indices>
+/ poolSize = 6
+/ selectionMode = sequence
+</list>
+
+<list practiceN4PositionsX1>
+/ items = (39.47,32.21,61.84,46.46,26.51,55.1)
+/ selectionMode = values.index
+</list>
+
+<list practiceN4PositionsY1>
+/ items = (32.11,59,27.07,54.63,55.88,32.84)
+/ selectionMode = values.index
+</list>
+
+<list practiceN4Colors1>
+/ items = ("black","white","white","red","blue","black")
+/ selectionMode = values.index
+</list>
+
+<list practiceN4PositionsX2>
+/ items = (59.65,45.15,44.75,66.25,53.5,70.12)
+/ selectionMode = values.index
+</list>
+
+<list practiceN4PositionsY2>
+/ items = (26.8,37.13,50.39,74.15,28.78,68.42)
+/ selectionMode = values.index
+</list>
+
+<list practiceN4Colors2>
+/ items = ("red","black","black","white","green","white")
+/ selectionMode = values.index
+</list>
+
+<list practiceN4PositionsX3>
+/ items = (72.04,67.26,71.21,57.5,70.98,36.97)
+/ selectionMode = values.index
+</list>
+
+<list practiceN4PositionsY3>
+/ items = (67.56,80.25,75.71,28.39,80.12,68.37)
+/ selectionMode = values.index
+</list>
+
+<list practiceN4Colors3>
+/ items = ("green","yellow","red","purple","yellow","yellow")
+/ selectionMode = values.index
+</list>
+
+<list practiceN4PositionsX4>
+/ items = (49.42,71.98,33.57,32.27,43.35,34.74)
+/ selectionMode = values.index
+</list>
+
+<list practiceN4PositionsY4>
+/ items = (80.53,51,71.48,21.85,74.34,34.9)
+/ selectionMode = values.index
+</list>
+
+<list practiceN4Colors4>
+/ items = ("yellow","purple","purple","black","purple","purple")
+/ selectionMode = values.index
+</list>
+
+//1 = same (probe shows the same color as the previous square in the same position)
+//2 = different (probe does not show the same color as the previous square in the same position)
+<list practiceN4TrialTypes>
+/ items = (2,1,1,2,2,1)
+/ selectionMode = values.index
+</list>
+
+//selects the position of the probe
+//numbers (1-4) refer to the particular square position it follows
+<list practiceN4ProbePosition>
+/ items = (3,2,4,1,2,4)
+/ selectionMode = values.index
+</list>
+
+//for different trials the probe can be any of the remaining 6 colors
+<list practiceN4ProbeColorAll>
+/ items = ("blue","black","purple","green","yellow","purple")
+/ selectionMode = values.index
+</list>
+
+//for different trials the probe can be any of the remaining 3 colors
+<list practiceN4ProbeColorCurrent>
+/ items = ("red","black","purple","white","purple","purple")
+/ selectionMode = values.index
+</list>
+
+************************************
+TEST
+
+n = 4, data for 60 test trials
+************************************
+
+<list n4Indices>
+/ poolSize = 60
+/ selectionMode = sequence
+</list>
+
+
+<list n4PositionsX1>
+/ items = (37.77,62.03,51.42,41.35,73.7,67.64,70.43,58.63,61.67,68.01,
+70.56,53.04,39.88,29.57,30.76,29.5,37.24,34.5,52.57,65.78,
+35.5,68.85,52.75,54.09,46.71,36.11,54.15,41.14,54.42,61.39,
+33.24,31.76,40.21,55.64,39.25,46.64,26.46,62.36,43.96,65.26,
+55.59,30.17,73.96,33.1,30.19,42.07,56.1,71.59,65.17,40.88,
+52.92,26.5,66.04,50.53,32.32,47.67,69.23,42.75,29.41,62.65)
+
+/ selectionMode = values.index
+</list>
+
+<list n4PositionsY1>
+/ items = (58.1,47.77,38.67,78.53,50.78,47.32,39.6,28.42,54.9,29.23,
+61.86,62.46,58.22,29.87,78.23,34.49,28.83,29.07,61.5,32.39,
+74.21,56.6,55.6,81.51,41.18,25.71,47.22,75.06,75.03,34.64,
+18.51,41.17,63.11,23.53,47.82,44.67,65.45,26.17,26.78,21.19,
+46.85,45.07,39.75,28.71,65.64,44.1,35.21,24.87,64.96,26.62,
+68.64,39.39,42.53,67.73,18.03,63.53,82.28,67.76,48.5,25.35)
+
+/ selectionMode = values.index
+</list>
+
+<list n4Colors1>
+/ items = ("blue","black","white","green","purple","green","blue","green","blue","black",
+"white","white","red","yellow","purple","yellow","black","blue","purple","white",
+"blue","purple","green","yellow","red","blue","green","red","green","purple",
+"black","blue","green","red","blue","white","blue","yellow","blue","blue",
+"blue","purple","black","green","black","black","blue","red","purple","green",
+"blue","black","red","red","red","green","red","blue","purple",black)
+
+/ selectionMode = values.index
+</list>
+
+<list n4PositionsX2>
+/ items = (55.64,41.68,25.73,67.73,69.65,28.32,29.87,31.01,31.69,45.42,
+66.29,63.24,30.73,62.28,66.75,47.28,50.54,32.5,73.12,35.57,
+55.09,39.07,39.36,58.14,67.76,48.36,49.17,44.1,74.15,31.66,
+60.6,52.29,41.02,55.75,59.36,29.82,67.56,33.64,65.46,33.63,
+26.39,65.89,29.85,61.67,58.11,57.1,65.6,46.86,43.42,66.73,
+69.71,43.96,37.1,26.3,31.12,49.75,38.57,36.79,46.09,68.57)
+
+/ selectionMode = values.index
+</list>
+
+<list n4PositionsY2>
+/ items = (40.85,34.88,23.96,59,18.82,77.17,37.14,61.64,26.3,68.01,
+18.32,35.78,33.25,28.62,69.37,26.25,63.14,56.84,33.32,55.02,
+69.81,44.07,75.31,20,64.79,68.93,81.29,42.07,42.31,46.32,
+62.57,66.26,32.13,72.76,78.79,76.57,24.67,77.93,48.63,40.04,
+25.14,18.96,44.28,45.28,73.98,70.9,61.71,34.75,22.3,68.87,
+36.61,61.22,68.82,29.51,59.34,39.99,68.85,28.14,80.53,59.25)
+
+/ selectionMode = values.index
+</list>
+
+<list n4Colors2>
+/ items = ("black","purple","green","purple","black","blue","black","white","red","purple",
+"yellow","red","black","white","yellow","red","purple","yellow","green","green",
+"yellow","blue","black","purple","white","green","black","black","black","black",
+"green","black","red","white","white","purple","purple","green","red","black",
+"black","red","yellow","yellow","white","yellow","green","purple","black","purple",
+"red","red","yellow","purple","blue","blue","yellow","purple","green","yellow")
+
+/ selectionMode = values.index
+</list>
+
+<list n4PositionsX3>
+/ items = (43.5,44.42,36.56,25.92,66.85,44.56,70.81,26,32.96,66.25,
+26.14,74.01,73.1,28.25,45.92,58.78,34.42,67.17,26.19,65.76,
+43.29,59.65,68.09,32.22,60,27.14,73.45,27.14,55.04,33.65,
+28.55,72.37,58.21,74.06,44.56,70.01,34.28,33.96,26.42,46.09,
+35.03,69.4,47.75,32.1,51.04,63.75,27.67,47.5,45.56,34.38,
+69.68,65.48,65.37,72.73,50.89,30.98,73.32,57.7,73.68,31.57)
+
+/ selectionMode = values.index
+</list>
+
+<list n4PositionsY3>
+/ items = (19.33,61.43,51.18,40.13,73.96,19.26,64.04,38.24,81.07,75.28,
+39.68,69.56,29.28,72.26,63.32,46.46,80.9,76.34,67.68,76.7,
+38.84,27.85,74.95,26.62,22.91,66.1,78.34,49.82,48.93,82.4,
+69.76,76.95,46.43,37.97,18.96,65.39,19.07,36.28,38.35,75.14,
+61.31,73.23,42.71,55.4,46.22,30.62,32.59,64.21,56.15,60.71,
+81.81,73.54,79.68,71,20.32,76,35.35,27.39,80.17,36.25)
+
+/ selectionMode = values.index
+</list>
+
+<list n4Colors3>
+/ items = ("green","white","purple","yellow","red","yellow","purple","red","black","yellow",
+"black","blue","purple","red","blue","green","blue","green","blue","blue",
+"green","white","white","white","purple","black","white","purple","white","yellow",
+"yellow","yellow","black","yellow","black","red","black","red","yellow","red",
+"green","blue","blue","purple","red","green","purple","blue","white","red",
+"black","yellow","white","white","yellow","red","purple","green","white","green")
+
+/ selectionMode = values.index
+</list>
+
+<list n4PositionsX4>
+/ items = (70.56,66.07,56.09,40.38,40.71,70.54,44.67,72.79,42.82,44.85,
+47.92,31.87,40.35,44.6,72.62,60.29,55.75,73.53,71.96,45.28,
+61.14,29.12,47.71,28.07,25.92,55.85,33.85,61.82,52.57,72.68,
+55.84,69.87,51.63,34.15,59.22,25.71,43.57,65.81,54.45,67.67,
+54.78,36.68,40.64,64.62,44.1,29.87,35.96,72.7,68.95,64.79,
+30.41,74.04,31.05,32.54,63.64,70.06,65.34,62.53,71.89,34.47)
+
+/ selectionMode = values.index
+</list>
+
+<list n4PositionsY4>
+/ items = (68.2,76.79,73.26,53.28,37.47,80.62,23.76,65.73,61.22,30.32,
+71.89,49.1,81.64,63.85,26.37,77.89,21.05,25.51,72.81,29.85,
+17.78,21.73,29.64,66.85,64.4,20.69,28.39,46.78,25.17,66.98,
+29.08,44.77,81.57,22.71,51.67,28.66,56.25,50.22,69.5,48.82,
+20.12,67.2,73.59,20.64,18.42,21.73,68.96,73.43,40.1,37.57,
+36.64,52.29,44.21,72.48,38.9,60.85,58.85,78.45,54.53,80.84)
+
+/ selectionMode = values.index
+</list>
+
+<list n4Colors4>
+/ items = ("red","green","black","red","blue","black","red","purple","yellow","green",
+"blue","purple","blue","purple","green","purple","white","white","black","red",
+"white","black","blue","green","blue","white","yellow","white","yellow","green",
+"purple","green","yellow","green","red","black","green","white","green","green",
+"white","green","purple","white","green","red","white","yellow","blue","white",
+"purple","white","green","black","green","white","white","black","black","purple")
+
+/ selectionMode = values.index
+</list>
+
+//1 = same (probe shows the same color as the previous square in the same position)
+//2 = different (probe does not show the same color as the previous square in the same position)
+<list n4TrialTypes>
+/ items = (1,2,2,1,1,2,2,2,1,2,
+1,2,1,2,2,2,2,2,2,2,
+2,1,1,1,2,1,1,2,1,1,
+2,2,1,1,2,2,2,1,2,1,
+1,1,1,2,2,1,1,1,1,1,
+1,2,2,1,2,2,1,1,2,1)
+
+/ selectionMode = values.index
+</list>
+
+//selects the position of the probe
+//numbers (1-4) refer to the particular square position it follows
+<list n4ProbePosition>
+/ items = (1,2,4,3,3,2,4,1,3,1,
+2,4,3,4,1,2,3,4,2,1,
+1,4,3,2,3,2,1,4,1,3,
+4,2,3,2,1,4,3,4,1,2,
+3,1,2,4,4,1,3,2,3,1,
+2,4,1,3,4,2,2,1,3,4)
+
+/ selectionMode = values.index
+</list>
+
+//for different trials the probe can be any of the remaining 6 colors
+<list n4ProbeColorAll>
+/ items = ("blue","green","white","yellow","red","purple","black","white","black","green",
+"yellow","yellow","purple","yellow","red","yellow","red","green","black","green",
+"white","black","white","purple","blue","green","green","green","green","yellow",
+"yellow","green","black","white","white","white","purple","white","black","black",
+"green","purple","yellow","black","purple","black","purple","purple","white","green",
+"red","blue","blue","white","yellow","green","yellow","blue","blue","purple")
+
+/ selectionMode = values.index
+</list>
+
+//for different trials the probe can be any of the remaining 3 colors
+<list n4ProbeColorCurrent>
+/ items = ("blue","white","green","yellow","red","black","black","white","black","green",
+"yellow","white","purple","red","blue","green","white","green","purple","blue",
+"yellow","black","white","purple","white","green","green","black","green","yellow",
+"green","blue","black","white","white","purple","purple","white","yellow","black",
+"green","purple","yellow","yellow","black","black","purple","purple","white","green",
+"red","yellow","white","white","red","red","yellow","blue","purple","purple")
+
+/ selectionMode = values.index
+</list>
+
+************************************
+Practice
+
+n = 6, data for 6 test trials
+************************************
+
+<list practiceN6Indices>
+/ poolSize = 6
+/ selectionMode = sequence
+</list>
+
+
+<list practiceN6PositionsX1>
+/ items = (35.14,64.18,38.42,42.47,32.35,59.28)
+/ selectionMode = values.index
+</list>
+
+<list practiceN6PositionsY1>
+/ items = (51.89,62.79,70.43,63.09,32,75.43)
+/ selectionMode = values.index
+</list>
+
+<list practiceN6Colors1>
+/ items = ("blue","black","red","red","blue","red")
+/ selectionMode = values.index
+</list>
+
+<list practiceN6PositionsX2>
+/ items = (47.64,31.76,30.23,67.34,70.09,28.21)
+/ selectionMode = values.index
+</list>
+
+<list practiceN6PositionsY2>
+/ items = (28.32,64.18,38.59,56.46,73.37,75.01)
+/ selectionMode = values.index
+</list>
+
+<list practiceN6Colors2>
+/ items = ("purple","yellow","purple","yellow","red","purple")
+/ selectionMode = values.index
+</list>
+
+<list practiceN6PositionsX3>
+/ items = (61.74,38.35,67.62,34.18,40.61,40.03)
+/ selectionMode = values.index
+</list>
+
+<list practiceN6PositionsY3>
+/ items = (53.45,35.43,59.35,41.85,71.92,29.19)
+/ selectionMode = values.index
+</list>
+
+<list practiceN6Colors3>
+/ items = ("black","purple","yellow","white","green","yellow")
+/ selectionMode = values.index
+</list>
+
+<list practiceN6PositionsX4>
+/ items = (47.53,48.32,56.82,66.25,68.1,65.03)
+/ selectionMode = values.index
+</list>
+
+<list practiceN6PositionsY4>
+/ items = (70.73,81.26,39.4,18.19,27.26,22.14)
+/ selectionMode = values.index
+</list>
+
+<list practiceN6Colors4>
+/ items = ("green","green","blue","purple","yellow","green")
+/ selectionMode = values.index
+</list>
+
+<list practiceN6PositionsX5>
+/ items = (67.9,56.82,39.2,43.47,49.56,69.87)
+/ selectionMode = values.index
+</list>
+
+<list practiceN6PositionsY5>
+/ items = (30.26,34.52,18.14,21.23,40.72,56.93)
+/ selectionMode = values.index
+</list>
+
+<list practiceN6Colors5>
+/ items = ("red","blue","black","blue","purple",black)
+/ selectionMode = values.index
+</list>
+
+<list practiceN6PositionsX6>
+/ items = (31.37,71.96,73.18,29.21,72.2,50.9)
+/ selectionMode = values.index
+</list>
+
+<list practiceN6PositionsY6>
+/ items = (81.07,22.07,29.05,81.31,50.21,48.6)
+/ selectionMode = values.index
+</list>
+
+<list practiceN6Colors6>
+/ items = ("yellow","white","white","black","black","white")
+/ selectionMode = values.index
+</list>
+
+//1 = same (probe shows the same color as the previous square in the same position)
+//2 = different (probe does not show the same color as the previous square in the same position)
+<list practiceN6TrialTypes>
+/ items = (1,1,1,2,2,2)
+/ selectionMode = values.index
+</list>
+
+//selects the position of the probe
+//numbers (1-6) refer to the particular square position it follows
+<list practiceN6ProbePosition>
+/ items = (4,2,5,6,1,3)
+/ selectionMode = values.index
+</list>
+
+//for different trials the probe can be any of the remaining 6 colors
+<list practiceN6ProbeColorAll>
+/ items = ("green","yellow","black","blue","black","green")
+/ selectionMode = values.index
+</list>
+
+//for different trials the probe can be any of the remaining 3 colors
+<list practiceN6ProbeColorCurrent>
+/ items = ("green","yellow","black","white","purple","purple")
+/ selectionMode = values.index
+</list>
+
+
+************************************
+TEST
+
+n = 6, data for 60 test trials
+************************************
+
+<list n6Indices>
+/ poolSize = 60
+/ selectionMode = sequence
+</list>
+
+
+<list n6PositionsX1>
+/ items = (50.57,32.39,49.75,42.54,65.95,71.76,71.93,68.7,62.21,56.2,
+33.77,61.74,37.64,56.32,69.82,26.51,52.49,28.92,35.56,59.18,
+30.58,43.32,34.56,43.49,32.17,68.14,58.13,63.28,71.76,40.6,
+60.68,41.27,63.52,43.97,43.59,43.31,67.12,71.26,55.38,43.54,
+25.71,48.45,27.85,62.96,27.28,26.85,38.64,52.74,34.92,52.64,
+27.8,42.67,43.49,68.43,49.57,55.11,50.75,27.78,73.64,64.84)
+
+/ selectionMode = values.index
+</list>
+
+<list n6PositionsY1>
+/ items = (72.81,74.7,19.6,69.78,55.14,18.57,73.65,59.95,27.16,24.87,
+29.21,53.64,49.04,53.09,52.13,69.65,23.58,69.18,79.79,70.12,
+49.5,44.13,40.03,50.17,40.09,39.02,74.71,48.96,62.65,70.56,
+48.39,50.42,22.21,76.15,65.4,27.3,75.95,25.03,30.48,53.29,
+73.56,78.04,79.43,31.03,36.38,26.85,37.22,55.07,75.46,58.92,
+63.02,18.76,79.79,71.48,75.51,21.64,56.65,61.81,43.67,66.45)
+
+/ selectionMode = values.index
+</list>
+
+<list n6Colors1>
+/ items = ("red","yellow","purple","black","yellow","white","yellow","black","blue","blue",
+"white","white","blue","red","blue","white","purple","yellow","red","red",
+"black","white","blue","purple","green","yellow","white","green","purple","purple",
+"green","purple","white","blue","red","yellow","green","green","purple","blue",
+"white","black","yellow","purple","red","purple","white","black","green","green",
+"white","white","white","blue","yellow","white","black","purple","green","green")
+
+/ selectionMode = values.index
+</list>
+
+<list n6PositionsX2>
+/ items = (26.78,52.78,41.71,38.67,26.07,52.6,50.84,56.25,31.25,30.53,
+52.03,35.27,72.43,70.95,34.89,44.25,71.56,47.59,38.82,52.39,
+66.87,64.84,62.59,71.79,28.85,33.27,52.35,42.34,34.14,49.92,
+74.31,60.85,57.07,29.42,26.12,74.21,28.8,45.1,29.82,29,
+27.87,42.85,70.95,65.48,43.86,55.42,28.26,53,66.37,49.9,
+27.35,32.39,69.51,30.73,69.87,68.45,40.82,38.29,50.7,43.5)
+
+/ selectionMode = values.index
+</list>
+
+<list n6PositionsY2>
+/ items = (28.57,43.85,74.09,25,25.58,68.06,29.57,79.93,36.92,48.84,
+73.09,31.89,46.34,68.82,23.39,45.75,20.51,34.21,46.25,19.44,
+66.01,71.34,24.07,29.51,77.85,67.17,38.1,17.71,65.65,44.78,
+18.33,79.76,66.79,26.19,33.84,80.34,34.07,25.96,42.17,67.65,
+34.85,41.27,51.25,80.06,78.79,57.06,75.46,80.26,63.09,22.05,
+22.35,61.4,19.83,36.84,42.22,58.03,28.23,23.85,47.59,65.81)
+
+/ selectionMode = values.index
+</list>
+
+<list n6Colors2>
+/ items = ("white","white","green","yellow","white","red","red","blue","red","black",
+"red","red","black","green","purple","black","white","white","green","purple",
+"purple","green","red","yellow","black","white","yellow","black","red","red",
+"black","green","blue","white","purple","black","blue","red","green","green",
+"yellow","yellow","blue","blue","blue","green","black","purple","red","purple",
+"blue","green","black","yellow","green","yellow","white","yellow","blue","red")
+
+/ selectionMode = values.index
+</list>
+
+<list n6PositionsX3>
+/ items = (67.54,28.82,74.21,67.5,44.14,63.22,63.46,34.74,61.57,56.29,
+28.94,52.75,29.55,31.05,53.79,58.5,49.32,25.67,71.29,32.46,
+27.48,29.66,68.43,36.31,70.65,47.78,73.04,53.32,44.96,67.57,
+30.14,66.73,30.07,68.15,73.01,41.42,29.53,69.85,70.59,42.03,
+69.56,73.15,43.03,50.52,45.77,46.68,49.4,53.92,40.95,36.17,
+68.65,66.62,68.2,57.63,34.34,27.6,71.04,66.07,30.35,37.07)
+
+/ selectionMode = values.index
+</list>
+
+<list n6PositionsY3>
+/ items = (48.77,39.14,28.75,68.92,65.93,47.86,46.89,66.7,75.59,54.92,
+73.81,78.21,79.46,45.85,77.45,62.28,77.4,22.39,67.12,63.59,
+20.25,61.56,78.26,75.51,26.44,24.26,37.14,75.28,25.44,72.56,
+60.03,31.94,68.09,50.47,37.43,54.34,72.68,76.53,67.37,22.16,
+47.57,51.78,36.39,51.29,49.57,81.4,65.84,21.48,48.22,51.32,
+68.06,38.64,53.57,26.44,34.99,34.86,20.69,52.61,18.23,38.95)
+
+/ selectionMode = values.index
+</list>
+
+<list n6Colors3>
+/ items = ("green","red","black","red","blue","purple","green","green","white","yellow",
+"yellow","green","purple","white","black","purple","blue","black","black","green",
+"yellow","purple","yellow","red","white","purple","blue","blue","white","blue",
+"yellow","black","red","red","blue","purple","white","blue","black","black",
+"purple","green","green","green","black","yellow","blue","red","purple","black",
+"green","red","yellow","green","purple","purple","green","white","black","blue")
+
+/ selectionMode = values.index
+</list>
+
+<list n6PositionsX4>
+/ items = (32.11,69.29,63.88,70.03,31.14,31.98,29.33,51.56,43.38,44.85,
+47.25,33.64,34.34,28.12,33.82,40.96,30.19,71.2,73.26,46.79,
+52,63.89,34.36,70.09,52.53,69.84,39.54,29.35,63.82,26.51,
+66.84,50.99,44.68,51.9,65.06,66.54,54.34,34.27,34.64,61.59,
+44.67,27.3,65.09,34.93,57.5,69.35,71.73,73.31,42.4,25.73,
+64.56,66.23,48.49,47.43,51.93,40.45,71.23,63.39,41.52,65.06)
+
+/ selectionMode = values.index
+</list>
+
+<list n6PositionsY4>
+/ items = (59.39,61.34,70.95,33.25,49.7,31.25,24.48,24.42,58.84,73.32,
+45.43,76.71,19.94,80.14,78.06,19.87,33.35,49.02,33.68,41.46,
+22.67,27.83,65.17,63.49,65.79,67.26,77.54,65.56,36.63,50.74,
+81.87,17.94,38.64,36.75,63.54,21.76,44.06,76.95,75.09,40.88,
+54.22,73.81,76.25,24.87,22.89,22.83,46.65,28.35,18.1,28.44,
+29.57,79.06,42.43,49.46,36.67,77.71,50.84,27.67,76.37,38.1)
+
+/ selectionMode = values.index
+</list>
+
+<list n6Colors4>
+/ items = ("yellow","blue","red","blue","black","green","blue","red","purple","red",
+"blue","purple","green","blue","white","green","yellow","red","purple","blue",
+"white","black","white","green","purple","green","black","yellow","yellow","white",
+"purple","blue","green","green","black","white","yellow","yellow","yellow","purple",
+"blue","blue","purple","white","green","white","red","green","yellow","blue",
+"red","yellow","green","red","blue","red","yellow","black","yellow","purple")
+
+/ selectionMode = values.index
+</list>
+
+<list n6PositionsX5>
+/ items = (66.2,71.06,51,29.58,61.39,52.64,42.72,69.26,29.62,36.04,
+54.22,60.18,67.03,48.79,62.34,66.65,27.85,64.65,49.35,71.07,
+73.31,43.02,58.57,53.75,72.96,49.39,30.12,36.39,29.87,68.87,
+29.48,40.42,70.15,69.84,50.75,57,73.9,26.51,51.86,70.51,
+61.02,27.44,74.03,26.55,62.63,46.42,72.73,27.14,26.58,73.12,
+48.25,55.42,32.88,73.62,31.75,50.13,29.5,56.11,60.92,48.24)
+
+/ selectionMode = values.index
+</list>
+
+<list n6PositionsY5>
+/ items = (21.64,24.3,48.5,50.64,25.73,17.94,81.31,25.44,82.17,24.28,
+17.53,20.35,79.2,28.94,26.35,28.39,63.25,74.76,22.03,45.14,
+37.07,19.85,55.04,25.58,78.93,56.1,19.32,41.54,38.97,47.46,
+22.07,76.76,46.79,82.37,36.59,65.62,38.5,55.21,55.84,18.96,
+72.9,27.48,17.75,52.17,70.71,19.85,80.04,41.17,28.3,46.22,
+71.45,60.14,17.6,35.88,61.14,50.7,78.37,73.1,73.54,19.71)
+
+/ selectionMode = values.index
+</list>
+
+<list n6Colors5>
+/ items = ("purple","purple","white","green","green","blue","purple","purple","yellow","purple",
+"purple","yellow","white","yellow","yellow","blue","red","green","blue","white",
+"green","yellow","black","black","red","red","purple","purple","green","green",
+"red","yellow","black","yellow","white","blue","purple","black","red","red",
+"green","red","black","black","yellow","blue","yellow","white","black","yellow",
+"black","purple","red","purple","red","blue","blue","blue","red","white")
+
+/ selectionMode = values.index
+</list>
+
+<list n6PositionsX6>
+/ items = (44.42,52.5,32.75,53.6,27.78,27.76,36.74,33.56,73.68,74.29,
+71.04,43.6,49.68,67.32,46.79,72.45,69.2,64.93,26.26,26.92,
+37.64,47.6,47.68,35.38,50.61,29.48,61.63,65.9,52.49,37.61,
+44.53,30.87,26.73,31.19,29.37,26.85,64.42,64.93,72.9,56.52,
+51.5,62.82,53.78,69.75,39.75,25.76,63.59,31.62,70.73,59.31,
+45.25,30.87,28.48,45.92,72.25,73.98,58.71,46.53,50.49,29.14)
+
+/ selectionMode = values.index
+</list>
+
+<list n6PositionsY6>
+/ items = (32.88,74.37,29.53,46.63,75.07,77.82,47.34,26.1,57.42,79.1,
+80.35,53.1,71.98,20.6,44.36,82.14,75.15,24.05,26.62,28.87,
+78.03,77.34,81.79,27.85,24.83,22.19,17.64,21.87,71.73,19.25,
+81.68,28.32,30.26,53.27,81.06,76.29,18.8,50.82,23.44,81.76,
+22.46,27.96,56.78,55.96,18.57,70.4,18.25,66.57,22.69,81.82,
+30.46,36.85,64.56,82.18,67.18,80.43,81.56,47.45,22.44,79.12)
+
+/ selectionMode = values.index
+</list>
+
+<list n6Colors6>
+/ items = ("blue","black","yellow","white","red","black","white","yellow","black","white",
+"green","blue","yellow","black","red","red","green","purple","white","black",
+"blue","blue","green","blue","blue","blue","red","white","black","black",
+"blue","white","yellow","purple","green","red","black","purple","blue","white",
+"red","purple","red","yellow","purple","red","purple","blue","blue","white",
+"purple","black","purple","white","white","green","purple","red","white",black)
+
+/ selectionMode = values.index
+</list>
+
+//1 = same (probe shows the same color as the previous square in the same position)
+//2 = different (probe does not show the same color as the previous square in the same position)
+<list n6TrialTypes>
+/ items = (2,2,2,2,2,2,2,1,2,1,
+2,1,2,2,1,2,2,2,1,2,
+1,2,1,1,1,2,2,1,1,2,
+2,2,1,1,2,2,1,1,1,1,
+2,2,2,1,1,1,2,1,1,1,
+1,1,2,1,1,1,2,2,1,1)
+
+/ selectionMode = values.index
+</list>
+
+//selects the position of the probe
+//numbers (1-6) refer to the particular square position it follows
+<list n6ProbePosition>
+/ items = (3,1,2,6,4,5,6,2,5,4,
+3,1,4,1,3,2,6,5,5,3,
+4,6,2,1,1,6,3,2,4,5,
+1,4,2,6,3,5,6,2,4,5,
+3,1,1,4,2,5,3,6,3,5,
+1,6,2,4,1,5,2,4,3,6)
+
+/ selectionMode = values.index
+</list>
+
+//for different trials the probe can be any of the remaining 6 colors
+<list n6ProbeColorAll>
+/ items = ("red","red","white","green","purple","black","purple","blue","green","red",
+"black","white","red","blue","black","white","purple","purple","blue","red",
+"white","purple","red","purple","green","green","black","black","yellow","purple",
+"black","green","blue","purple","purple","green","black","red","yellow","red",
+"black","white","purple","white","blue","blue","green","blue","purple","yellow",
+"white","black","red","red","yellow","blue","yellow","green","black",black)
+
+/ selectionMode = values.index
+</list>
+
+//for different trials the probe can be any of the remaining 3 colors
+<list n6ProbeColorCurrent>
+/ items = ("blue","black","red","blue","yellow","black","red","blue","white","red",
+"red","white","purple","blue","black","purple","yellow","black","blue","red",
+"white","yellow","red","purple","green","white","red","black","yellow","blue",
+"black","yellow","blue","purple","red","purple","black","red","yellow","red",
+"yellow","purple","green","white","blue","blue","red","blue","purple","yellow",
+"white","black","green","red","yellow","blue","green","white","black",black)
+
+/ selectionMode = values.index
+</list>
+
+
+************************************
+Practice
+
+n = 8, data for 6 test trials
+************************************
+
+<list practiceN8Indices>
+/ poolSize = 6
+/ selectionMode = sequence
+</list>
+
+
+<list practiceN8PositionsX1>
+/ items = (69.1,30.78,57.39,63.57,58.61,52.82)
+/ selectionMode = values.index
+</list>
+
+<list practiceN8PositionsY1>
+/ items = (22.26,68.43,73.79,82.04,58.75,58.17)
+/ selectionMode = values.index
+</list>
+
+<list practiceN8Colors1>
+/ items = ("red","green","purple","purple","black",black)
+/ selectionMode = values.index
+</list>
+
+<list practiceN8PositionsX2>
+/ items = (49.34,64.06,29.76,55.71,45.18,74.06)
+/ selectionMode = values.index
+</list>
+
+<list practiceN8PositionsY2>
+/ items = (74.1,42.96,70.23,23.83,79.62,46.46)
+/ selectionMode = values.index
+</list>
+
+<list practiceN8Colors2>
+/ items = ("blue","red","blue","yellow","green","green")
+/ selectionMode = values.index
+</list>
+
+<list practiceN8PositionsX3>
+/ items = (71.12,28.19,67.51,57.81,25.71,31.23)
+/ selectionMode = values.index
+</list>
+
+<list practiceN8PositionsY3>
+/ items = (74.01,40.88,38.15,53.96,41.92,62.52)
+/ selectionMode = values.index
+</list>
+
+<list practiceN8Colors3>
+/ items = ("black","white","red","red","blue","white")
+/ selectionMode = values.index
+</list>
+
+<list practiceN8PositionsX4>
+/ items = (47.1,56.18,29.44,29.17,71.31,38.97)
+/ selectionMode = values.index
+</list>
+
+<list practiceN8PositionsY4>
+/ items = (31.48,19.83,45.85,38.38,25.83,17.58)
+/ selectionMode = values.index
+</list>
+
+<list practiceN8Colors4>
+/ items = ("purple","yellow","black","green","white","purple")
+/ selectionMode = values.index
+</list>
+
+<list practiceN8PositionsX5>
+/ items = (35.68,48.22,46.32,45.82,52,69.23)
+/ selectionMode = values.index
+</list>
+
+<list practiceN8PositionsY5>
+/ items = (53.57,73.79,21.37,76.06,25.37,69.79)
+/ selectionMode = values.index
+</list>
+
+<list practiceN8Colors5>
+/ items = ("green","blue","white","black","purple","red")
+/ selectionMode = values.index
+</list>
+
+<list practiceN8PositionsX6>
+/ items = (66.18,66.31,46.57,73.14,68.84,56.71)
+/ selectionMode = values.index
+</list>
+
+<list practiceN8PositionsY6>
+/ items = (48.95,73,55,19.3,79.29,32.43)
+/ selectionMode = values.index
+</list>
+
+<list practiceN8Colors6>
+/ items = ("yellow","black","yellow","blue","yellow","blue")
+/ selectionMode = values.index
+</list>
+
+<list practiceN8PositionsX7>
+/ items = (32.52,36.99,27.26,25.78,26.46,47.04)
+/ selectionMode = values.index
+</list>
+
+<list practiceN8PositionsY7>
+/ items = (80.6,19.82,22.48,80.37,66.73,80.37)
+/ selectionMode = values.index
+</list>
+
+<list practiceN8Colors7>
+/ items = ("white","purple","green","white","red","yellow")
+/ selectionMode = values.index
+</list>
+
+<list practiceN8PositionsX8>
+/ items = (28.25,46.31,72.32,74.2,27.8,74.09)
+/ selectionMode = values.index
+</list>
+
+<list practiceN8PositionsY8>
+/ items = (22.26,40.61,61.04,43.11,18.64,17.58)
+/ selectionMode = values.index
+</list>
+
+<list practiceN8Colors8>
+/ items = ("white","white","green","green","purple","blue")
+/ selectionMode = values.index
+</list>
+
+
+//1 = same (probe shows the same color as the previous square in the same position)
+//2 = different (probe does not show the same color as the previous square in the same position)
+<list practiceN8TrialTypes>
+/ items = (1,2,1,2,2,1)
+/ selectionMode = values.index
+</list>
+
+//selects the position of the probe
+//numbers (1-8) refer to the particular square position it follows
+<list practiceN8ProbePosition>
+/ items = (5,7,3,6,2,1)
+/ selectionMode = values.index
+</list>
+
+//for different trials the probe can be any of the remaining 6 colors
+<list practiceN8ProbeColorAll>
+/ items = ("green","black","red","yellow","white",black)
+/ selectionMode = values.index
+</list>
+
+//for different trials the probe can be any of the remaining 3 colors
+<list practiceN8ProbeColorCurrent>
+/ items = ("green","white","red","purple","white",black)
+/ selectionMode = values.index
+</list>
+
+
+
+************************************
+TEST
+
+n = 8, data for 60 test trials
+************************************
+
+<list n8Indices>
+/ poolSize = 60
+/ selectionMode = sequence
+</list>
+
+
+<list n8PositionsX1>
+/ items = (70.89,56.1,59.21,71.23,29.12,25.8,51.75,59.67,31.89,65.73,
+41.04,68.78,55.02,57.64,50.77,66.59,65.03,36.28,28.12,71.32,
+45.67,33.64,61.38,57.81,60.4,44.84,55.45,58.18,35.32,48.09,
+52.38,49.78,73.01,74.21,65.37,73.18,33.84,55.03,29.5,39.67,
+46.11,29.67,36.32,42.5,48.32,65.75,40.81,35.14,38.92,32.24,
+41.92,60.74,49.59,30.71,36.6,47.72,27.21,34.32,59.5,71.07)
+/ selectionMode = values.index
+</list>
+
+<list n8PositionsY1>
+/ items = (56.59,62.68,59.31,75.9,53.07,80.76,27.6,29.46,28.23,52.56,
+68.5,80.78,39.02,50.28,81.12,76.43,77.67,25.53,52.65,58.68,
+34.13,59.53,44.6,31.01,25.12,19.12,49.74,64.73,80.81,73.03,
+74.68,57.54,27.5,17.53,56.65,57,71.09,20.37,76.37,71.93,
+36.24,71.68,76.15,54.77,20.25,54.17,29.85,28.17,55.71,64.01,
+65.79,32.09,34.47,24.78,68.09,66.46,23.51,70.51,53.67,58.07)
+
+/ selectionMode = values.index
+</list>
+
+<list n8Colors1>
+/ items = ("green","green","green","red","purple","red","white","yellow","green","white",
+"purple","yellow","green","black","red","blue","green","blue","purple","blue",
+"red","white","black","yellow","purple","yellow","black","white","purple","green",
+"white","black","yellow","green","blue","blue","yellow","yellow","black","blue",
+"yellow","red","black","yellow","black","white","red","white","blue","blue",
+"purple","red","white","yellow","green","green","purple","purple","green","purple")
+
+/ selectionMode = values.index
+</list>
+
+<list n8PositionsX2>
+/ items = (74.18,71.84,65.29,71.12,66.26,45.15,29.48,67.7,62.64,36.97,
+60.46,27.89,52.85,26.55,42.09,43.15,50.67,62.99,52.79,60.46,
+54.79,26.28,39.75,68.93,36.21,32.36,31.1,47.81,56.52,74.35,
+64.9,57.96,49.67,26.37,45.35,48.03,67.23,53.78,37.45,54.89,
+55.25,67.96,37.25,59.46,44.42,69.01,68.28,65.65,52.11,60.68,
+40.47,55.1,68.93,41.22,71.68,49.04,53.71,30.07,57.5,46.06)
+
+/ selectionMode = values.index
+</list>
+
+<list n8PositionsY2>
+/ items = (26.48,27.17,29.53,26.26,75.32,22.87,50.81,69.34,52.07,57.38,
+18.12,49.85,73.87,30.78,41.28,37.09,47.54,68.01,53.38,80.37,
+55.63,32.07,33.86,64.06,19.5,36.03,67.92,36.82,48.15,43.06,
+44.29,28.07,79.79,70.04,65.2,21.98,66.5,75.29,46.57,42.24,
+58.35,25.67,17.67,75.62,50.39,82.09,46,79.09,23.37,64.2,
+18.37,54.67,74.64,52.63,78.73,35.46,57.35,43.78,26.64,30.03)
+
+/ selectionMode = values.index
+</list>
+
+<list n8Colors2>
+/ items = ("blue","black","purple","purple","red","black","purple","blue","black","black",
+"yellow","green","purple","green","blue","green","white","black","blue","yellow",
+"yellow","red","white","blue","green","white","white","purple","green","white",
+"purple","yellow","black","black","red","white","white","blue","yellow","purple",
+"red","purple","yellow","red","yellow","red","blue","green","white","green",
+"yellow","black","green","white","yellow","red","blue","red","purple","yellow")
+
+/ selectionMode = values.index
+</list>
+
+<list n8PositionsX3>
+/ items = (46.21,68.06,36.22,31.35,43.13,55.85,47.28,34.18,33.9,64.76,
+36.72,63.36,33.2,74.28,72.07,35.1,32.97,43.34,36.75,29.28,
+73.15,52.27,43.28,54.84,52.34,62.99,46.39,29.57,27.12,51.43,
+35.31,36.31,70.34,49.89,25.94,51.93,45.99,67.9,66.7,71.76,
+27.41,72.62,57.39,59.24,43.1,48.64,68.57,71.65,68.76,66.98,
+68.43,42.47,69.87,48.72,50.53,64.81,73.59,61.03,31.44,32.56)
+
+/ selectionMode = values.index
+</list>
+
+<list n8PositionsY3>
+/ items = (63.78,81.75,42.54,36.71,72.28,51.54,52.39,56.56,77.81,20.69,
+19.96,41.79,68.4,21.62,20.98,80.23,58.63,70.7,23.94,46.63,
+21.1,21.33,72.23,79.48,50.63,20.92,27.64,64.07,29.01,38.5,
+20.82,35.45,80.14,22.37,47.07,74.09,46.63,57.32,72.84,30.28,
+72.04,49.21,41.17,37.89,73.68,42.65,70.53,51.64,58.84,19.48,
+55.53,27.44,50.86,17.98,48.67,50.06,57.46,23.78,73.79,81.93)
+
+/ selectionMode = values.index
+</list>
+
+<list n8Colors3>
+/ items = ("yellow","red","red","yellow","white","green","green","white","purple","blue",
+"green","white","black","blue","yellow","purple","red","red","white","green",
+"blue","green","green","black","black","purple","purple","red","red","yellow",
+"red","blue","white","yellow","black","black","blue","green","purple","green",
+"black","white","blue","blue","purple","blue","white","black","green","red",
+"red","green","purple","red","purple","black","white","yellow","white",black)
+
+/ selectionMode = values.index
+</list>
+
+<list n8PositionsX4>
+/ items = (56.27,39.34,31.58,50.89,65.4,27.5,67.62,40.1,50.2,45.5,
+73.45,26.73,30.96,48.1,68.81,73.57,56.57,58.68,55.35,32.57,
+28.85,46.09,70.87,31.87,37.03,56.78,64.81,65.03,67.89,33.24,
+67.2,74.01,48.57,74.25,60.53,28.71,71.04,35.17,53.32,60.93,
+70.89,34.9,68.04,45.18,74.14,39.43,47.1,37.85,28.8,27.53,
+55.53,28.21,27.07,69.09,45.56,28.48,54.03,67.56,27.69,26.78)
+
+/ selectionMode = values.index
+</list>
+
+<list n8PositionsY4>
+/ items = (42.53,20.78,78.43,30.55,46.35,22.87,52.07,80.98,33.64,20.89,
+43.34,19.67,44.86,78.14,53.99,38.28,21.51,25.94,27.12,70.5,
+46.79,43.1,74.7,42.5,81.92,70.29,72.54,23.19,27.6,43.85,
+18.69,67.62,32.24,78.75,28.01,30.83,22.21,55.49,22.69,64.48,
+43.22,22.66,79.34,21.89,62.75,76.87,76.03,71.98,27.25,38.84,
+31.21,45.52,34.17,63.82,22.17,49.13,23.19,67.37,20.57,19.6)
+
+/ selectionMode = values.index
+</list>
+
+<list n8Colors4>
+/ items = ("black","white","yellow","blue","yellow","purple","red","red","red","purple",
+"red","red","yellow","red","black","red","yellow","green","yellow","black",
+"green","purple","red","white","blue","blue","blue","yellow","yellow","black",
+"green","green","red","purple","purple","green","red","black","white","black",
+"purple","blue","red","purple","red","green","green","yellow","purple","purple",
+"blue","yellow","yellow","green","blue","blue","black","black","red","green")
+
+/ selectionMode = values.index
+</list>
+
+<list n8PositionsX5>
+/ items = (58.17,29.66,47.28,40.92,43.04,25.67,71.23,42.52,70.96,72.1,
+47.67,40.61,73.35,71.2,28.62,56.84,73.53,33.24,32.49,68.32,
+64.31,60.99,29.14,32.71,55.14,27.25,27.89,28.82,61.14,72.17,
+34.27,27.73,69.5,52.78,29.35,50.04,29.23,35,73.01,29.26,
+72.98,52.71,38.25,28.48,70.81,36.1,69.2,47.75,47.67,48.36,
+31.94,61.47,71.79,72.32,70.37,66.95,29.85,47.6,40.53,26.19)
+
+/ selectionMode = values.index
+</list>
+
+<list n8PositionsY5>
+/ items = (80.68,65.9,20.53,73.62,17.87,46.03,26.83,24.33,78.73,76.42,
+45.84,73.7,52.17,74.37,60.9,22.14,26.85,50.75,81.98,19.85,
+81.48,74.37,52.49,17.8,75.34,59.13,25.67,22.26,78.26,66.51,
+79.21,57.04,50.6,46.85,19.94,50.42,21.46,19.03,43.32,18.25,
+78.46,37.04,47.15,70.4,37.21,22.41,20.69,52.53,78.26,81.28,
+45.46,77.95,25.69,22.32,46.78,75.14,81.43,42.04,51.78,51.32)
+
+/ selectionMode = values.index
+</list>
+
+<list n8Colors5>
+/ items = ("red","yellow","white","white","black","white","blue","black","yellow","red",
+"blue","blue","blue","white","green","yellow","purple","purple","red","red",
+"black","black","yellow","purple","red","black","red","green","black","red",
+"yellow","white","blue","blue","white","purple","black","purple","blue","yellow",
+"white","black","white","green","blue","black","black","red","yellow","white",
+"white","purple","red","purple","black","purple","yellow","blue","blue","white")
+
+/ selectionMode = values.index
+</list>
+
+<list n8PositionsX6>
+/ items = (30.21,40.68,69.46,71.54,73.57,64.01,48.36,73.79,74.01,28.48,
+60.46,51.02,74.26,47.57,30.76,55.67,28.35,73.23,70.21,54.02,
+72.57,70.31,68.96,28.25,29.25,40.82,70.34,43.31,71.95,62.2,
+42.06,58.42,26.33,32.96,44.11,28.05,50.5,34.1,32.56,31.05,
+27.19,53.81,71.43,26.44,28.21,29.73,33.79,53.68,72.37,53.2,
+73.18,26.75,40.75,58.53,64.9,32.5,72.46,30.55,74.29,46.97)
+
+/ selectionMode = values.index
+</list>
+
+<list n8PositionsY6>
+/ items = (38.5,47.67,78.26,52.14,24.12,22.08,75.81,46.43,17.67,80.9,
+62.57,18.6,79.76,20.8,19,57.28,25.26,43.54,77.26,50.85,
+59.82,26.55,23.44,71.98,59.25,80.79,21.12,81.03,59.86,18.66,
+55.38,78.15,41.56,46.43,37.53,69.46,79.29,82.46,18.98,42.04,
+20.12,65.34,25.55,40.17,19.21,46.47,57.67,29.53,81.98,39.63,
+25.66,73.53,79.46,38.9,20.16,82.28,81.4,18.76,38.32,62.57)
+
+/ selectionMode = values.index
+</list>
+
+<list n8Colors6>
+/ items = ("purple","purple","blue","green","blue","blue","black","purple","blue","green",
+"white","black","red","yellow","purple","white","black","white","black","white",
+"white","blue","purple","red","white","red","green","black","white","blue",
+"blue","purple","purple","red","green","yellow","green","white","red","red",
+"green","green","purple","white","green","purple","yellow","purple","black","black",
+"green","blue","black","black","red","yellow","green","green","black","red")
+
+/ selectionMode = values.index
+</list>
+
+<list n8PositionsX7>
+/ items = (26.33,72.87,29.57,25.73,45.65,64.62,33.04,26.17,31.76,52.34,
+27.03,45.56,67.54,38.24,52.7,29.46,46.53,26.08,70.6,46.45,
+34.11,70.78,26.07,73.68,72.56,72.93,46.02,73.64,50.07,34.28,
+69.93,39.88,33.71,73.04,29.19,72.7,48.54,72.95,47.67,74,
+48.6,72.92,53.07,73.42,62.02,56.47,27.16,70.26,71.45,36.85,
+57.93,43.92,52.84,26.25,29.57,69.23,35.32,50.65,65.96,59.67)
+
+/ selectionMode = values.index
+</list>
+
+<list n8PositionsY7>
+/ items = (64.37,53.57,20.42,59.02,41.85,76.98,22.32,35.64,53.21,76.43,
+53.15,48.96,17.8,58.21,21.3,51.99,81.98,74,42.25,20.78,
+82.34,50.6,81.4,40.7,74.95,44.46,80.73,79.6,25.98,19.53,
+82.04,79.84,64.37,46.49,78.28,20.3,19.39,29.67,78.7,81.35,
+82.4,80,64.48,58.5,80.12,19.78,79.85,18.5,19.58,19.08,
+76.12,82.23,61.24,74.82,39.71,20.91,52.27,78.82,79.12,81.14)
+
+/ selectionMode = values.index
+</list>
+
+<list n8Colors7>
+/ items = ("white","blue","black","black","green","yellow","yellow","green","white","yellow",
+"black","purple","white","purple","white","black","blue","yellow","green","purple",
+"purple","yellow","blue","green","yellow","green","yellow","blue","blue","purple",
+"black","red","green","white","yellow","red","purple","red","green","white",
+"blue","yellow","green","black","white","yellow","purple","blue","red","yellow",
+"black","white","blue","blue","white","white","red","white","yellow","blue")
+
+/ selectionMode = values.index
+</list>
+
+<list n8PositionsX8>
+/ items = (54.03,46.34,50.35,51.49,26.33,40.38,30.21,54.27,53.49,30.03,
+72.51,71.01,33.75,27.51,69.01,28.17,73.31,50.84,71.81,28.53,
+27.25,42.14,26.19,49.53,72.46,51.84,73.26,73.56,32.75,25.91,
+26.96,71.18,51.36,54.04,65.1,69.26,26.25,72.7,56.31,47.81,
+63.75,30.76,74.06,73.73,27.69,72.46,51.31,25.92,29.67,72.6,
+26.39,72.95,28.69,47.56,51.15,32,73.34,73.85,48.34,62.34)
+
+/ selectionMode = values.index
+</list>
+
+<list n8PositionsY8>
+/ items = (19.23,82,80.18,53.77,81.71,62.32,74.04,54.25,74.6,32.46,
+80.31,19.91,19.75,77.48,79.21,22.5,54.28,49.07,17.98,19.46,
+20.57,81.07,18.5,55.13,46.17,44.15,46.84,52.52,52.75,66.18,
+42.11,43.79,56.67,77.09,81.18,80.73,47.04,80.79,52.06,18.71,
+20.12,45.71,51.1,24.51,58.09,31.8,51.45,51.31,75.68,45.85,
+77.59,55.85,60.21,82.04,81.15,21.57,25.94,44.61,80.48,20.64)
+
+/ selectionMode = values.index
+</list>
+
+<list n8Colors8>
+/ items = ("white","yellow","black","red","blue","black","green","purple","green","black",
+"red","white","green","purple","white","blue","blue","white","yellow","green",
+"purple","purple","white","green","purple","red","blue","black","yellow","blue",
+"red","white","blue","black","yellow","blue","red","yellow","red","black",
+"white","yellow","red","green","black","white","black","purple","black","blue",
+"red","purple","blue","white","red","purple","black","purple","white","purple")
+
+/ selectionMode = values.index
+</list>
+
+
+//1 = same (probe shows the same color as the previous square in the same position)
+//2 = different (probe does not show the same color as the previous square in the same position)
+<list n8TrialTypes>
+/ items = (2,2,1,1,2,2,2,2,2,2,
+1,1,2,1,2,1,2,2,2,1,
+2,2,1,2,2,1,1,1,1,2,
+1,2,1,1,2,2,2,2,2,1,
+2,1,2,2,1,1,1,1,1,2,
+1,1,1,1,1,1,1,1,2,2)
+
+/ selectionMode = values.index
+</list>
+
+//selects the position of the probe
+//numbers (1-8) refer to the particular square position it follows
+<list n8ProbePosition>
+/ items = (8,1,4,6,5,3,2,7,5,7,
+3,8,2,4,6,1,2,1,8,5,
+4,6,3,7,3,7,6,1,4,8,
+5,2,5,8,2,3,6,7,1,4,
+2,6,3,8,1,7,4,5,2,8,
+7,1,3,5,4,6,4,6,2,5)
+
+/ selectionMode = values.index
+</list>
+
+//for different trials the probe can be any of the remaining 6 colors
+<list n8ProbeColorAll>
+/ items = ("black","red","yellow","green","purple","black","blue","black","white","black",
+"green","white","green","red","yellow","blue","blue","yellow","black","red",
+"white","yellow","green","red","blue","green","green","white","yellow","purple",
+"yellow","black","blue","black","black","purple","yellow","blue","white","black",
+"green","green","red","red","black","yellow","green","red","white","yellow",
+"black","red","purple","purple","blue","yellow","black","green","green","purple")
+
+/ selectionMode = values.index
+</list>
+
+//for different trials the probe can be any of the remaining 3 colors
+<list n8ProbeColorCurrent>
+/ items = ("black","red","yellow","green","purple","black","blue","black","white","black",
+"green","white","green","red","yellow","blue","blue","yellow","black","red",
+"white","yellow","green","red","blue","green","green","white","yellow","purple",
+"yellow","black","blue","black","black","purple","yellow","blue","white","black",
+"green","green","red","red","black","yellow","green","red","white","yellow",
+"black","red","purple","purple","blue","yellow","black","green","green","purple")
+
+/ selectionMode = values.index
+</list>
+
+
+*************************************************
+Data Lists: used for descriptive statistics
+store correct latencies/accuracy data
+fill up during runtime
+*************************************************
+
+Note: list stores 1 = correct response; 0 = incorrect response for each relevant trial
+any response coded as an error is automatically coded as 0
+<list acc>
+</list>
+
+Note: list stores the latency of correct responses for each relevant trial
+<list corrRT>
+</list>
+
+
+<list hitsN4>
+</list>
+
+<list hitsRTN4>
+</list>
+
+<list crN4>
+</list>
+
+<list crRTN4>
+</list>
+
+<list hitsN6>
+</list>
+
+<list hitsRTN6>
+</list>
+
+<list crN6>
+</list>
+
+<list crRTN6>
+</list>
+
+<list hitsN8>
+</list>
+
+<list hitsRTN8>
+</list>
+
+<list crN8>
+</list>
+
+<list crRTN8>
+</list>
+
+//will store all the square Distances (in px) of the presented squares during test trials
+<list squareDistances>
+</list>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	TRIALS 	
+**************************************************************************************************************
+**************************************************************************************************************
+
+
+******************************************************************
+Practice 
+all n
+******************************************************************
+
+<trial practiceN>
+/ onTrialBegin = {
+	values.index = list["practiceN" + values.n + "Indices"].nextIndex;
+	values.responseCategory = "";
+
+	//sample square positions
+	for (var i=1; i<=8;i++) {
+		if (i <= values.n) {
+			//sample square positions
+			values["x" + i] = list["practiceN" + values.n + "PositionsX" + i].nextValue;
+			values["y" + i] = list["practiceN" + values.n + "PositionsY" + i].nextValue;
+			//sample square color
+			values["color" + i] = list["practiceN" + values.n + "Colors" + i].nextValue;
+			//prepare target stimuli
+			shape["target" + i].skip = false;
+		} else {
+			values["x" + i] = "";
+			values["y" + i] = "";
+			values["color" + i] = "";
+			shape["target" + i].skip = true;
+		}
+	}
+
+	//sample trialType
+	values.trialType = list["practiceN" + values.n + "TrialTypes"].nextValue;
+
+	//sample probe position
+	values.probe = list["practiceN" + values.n + "ProbePosition"].nextValue;
+	values.probeX = values["x" + values.probe];
+	values.probeY = values["y" + values.probe];
+
+	//sample probe color
+	if (parameters.useOnlyArrayColorsForProbe) {
+		values.probeColor = list["practiceN" + values.n + "ProbeColorCurrent"].nextValue;
+	} else {
+		values.probeColor = list["practiceN" + values.n + "ProbeColorAll"].nextValue;
+	}
+
+	this.insertStimulusTime(shape.presentationSquare, parameters.arrayDuration);
+	this.insertStimulusTime(shape.probe, (parameters.arrayDuration + parameters.retentionInterval));
+}
+/ stimulusTimes = [0 = clearScreen, canvas, presentationSquare, target1, target2, target3, target4, target5, target6, target7, target8, differentKeyReminder, sameKeyReminder]
+/ validResponse = (parameters.leftResponseKey, parameters.rightResponseKey)
+/ beginResponseTime = parameters.arrayDuration + parameters.retentionInterval
+/ isCorrectResponse = {
+	return((values.trialType == 1 && this.responseText == parameters.sameKey) ||
+	(values.trialType == 2 && this.responseText == parameters.differentKey))
+}
+/ onTrialEnd = {
+	values.feedback = this.correct; //0-based selection
+
+	if (this.responseText == parameters.sameKey) {
+		values.responseCategory = "same";
+	} else if (this.responseText == parameters.differentKey) {
+		values.responseCategory = "different";
+	}
+}
+
+/ branch = {
+	return trial.practiceNIti;
+}
+</trial>
+
+
+<trial practiceNIti>
+/ onTrialBegin = {
+	text.sameKeyReminderHL.skip = false;
+	text.differentKeyReminderHL.skip = false;
+	if (trial.practiceN.responseText == parameters.differentKey) {
+		text.sameKeyReminderHL.skip = true;
+	} else {
+		text.differentKeyReminderHL.skip = true;
+	}
+}
+/ stimulusTimes = [0 = presentationSquare, sameKeyReminderHL, differentKeyReminderHL, feedback; 50 = sameKeyReminder, differentKeyReminder]
+/ validResponse = (parameters.leftResponseKey, parameters.rightResponseKey)//should show response buttons on touchscreen devices
+/ isValidResponse = {
+	return false;
+}
+/ trialDuration = parameters.feedbackDuration
+/ recordData = false
+</trial>
+
+
+
+//Note: the following trial can be used to double check the placement of the squares/probe
+<trial practiceNDebug>
+/ onTrialBegin = {
+	values.n = 4;
+	values.index = list["practiceN" + values.n + "Indices"].nextIndex;
+
+	//sample square positions
+	for (var i=1; i<=8;i++) {
+		if (i <= values.n) {
+			//sample square positions
+			values["x" + i] = list["practiceN" + values.n + "PositionsX" + i].nextValue;
+			values["y" + i] = list["practiceN" + values.n + "PositionsY" + i].nextValue;
+			//sample square color
+			values["color" + i] = list["practiceN" + values.n + "Colors" + i].nextValue;
+			//prepare target stimuli
+			shape["target" + i].skip = false;
+		} else {
+			values["x" + i] = "";
+			values["y" + i] = "";
+			values["color" + i] = "";
+			shape["target" + i].skip = true;
+		}
+	}
+
+	//sample trialType
+	values.trialType = list["practiceN" + values.n + "TrialTypes"].nextValue;
+
+	//sample probe position
+	//sample probe position
+	values.probe = list["practiceN" + values.n + "ProbePosition"].nextValue;
+	values.probeX = values["x" + values.probe];
+	values.probeY = values["y" + values.probe];
+
+	//sample probe color
+	if (parameters.useOnlyArrayColorsForProbe) {
+		values.probeColor = list["practiceN" + values.n + "ProbeColorCurrent"].nextValue;
+	} else {
+		values.probeColor = list["practiceN" + values.n + "ProbeColorAll"].nextValue;
+	}
+
+	values.probeX+= pct(0.5);
+	values.probeY+= pct(0.5);
+
+	//sample probe color
+	if (parameters.useOnlyArrayColorsForProbe) {
+		values.probeColor = list["practiceN" + values.n + "ProbeColorCurrent"].nextValue;
+	} else {
+		values.probeColor = list["practiceN" + values.n + "ProbeColorAll"].nextValue;
+	}
+}
+/ stimulusTimes = [0 = clearScreen, presentationSquare, target1, target2, target3, target4, target5, target6, target7, target8, probe, debugInfo]
+/ validResponse = (parameters.leftResponseKey, parameters.rightResponseKey)
+/ beginResponseTime = 0
+/ isCorrectResponse = {
+	return((values.trialType == 1 && this.responseText == parameters.sameKey) ||
+	(values.trialType == 2 && this.responseText == parameters.differentKey))
+}
+/ postTrialPause = parameters.feedbackDuration
+/ responseMessage = (anyResponse, shape.presentationSquare, 0)
+</trial>
+
+******************************************************************
+Test 
+all n
+******************************************************************
+
+<trial n>
+/ onTrialBegin = {
+	values.index = list["n" + values.n + "Indices"].nextIndex;
+	values.responseCategory = "";
+
+	//sample square positions
+	for (var i=1; i<=8;i++) {
+		if (i <= values.n) {
+			//sample square positions
+			values["x" + i] = list["n" + values.n + "PositionsX" + i].nextValue;
+			values["y" + i] = list["n" + values.n + "PositionsY" + i].nextValue;
+			//sample square color
+			values["color" + i] = list["n" + values.n + "Colors" + i].nextValue;
+			//prepare target stimuli
+			shape["target" + i].skip = false;
+		} else {
+			values["x" + i] = "";
+			values["y" + i] = "";
+			values["color" + i] = "";
+			shape["target" + i].skip = true;
+		}
+	}
+
+	//sample trialType
+	values.trialType = list["n" + values.n + "TrialTypes"].nextValue;
+
+	//sample probe position
+	values.probe = list["n" + values.n + "ProbePosition"].nextValue;
+	values.probeX = values["x" + values.probe];
+	values.probeY = values["y" + values.probe];
+
+	//sample probe color
+	if (parameters.useOnlyArrayColorsForProbe) {
+		values.probeColor = list["n" + values.n + "ProbeColorCurrent"].nextValue;
+	} else {
+		values.probeColor = list["n" + values.n + "ProbeColorAll"].nextValue;
+	}
+
+	this.insertStimulusTime(shape.presentationSquare, parameters.arrayDuration);
+	this.insertStimulusTime(shape.probe, (parameters.arrayDuration + parameters.retentionInterval));
+}
+/ stimulusTimes = [0 = clearScreen, canvas, presentationSquare, target1, target2, target3, target4, target5, target6, target7, target8, differentKeyReminder, sameKeyReminder]
+/ validResponse = (parameters.leftResponseKey, parameters.rightResponseKey)
+/ beginResponseTime = parameters.arrayDuration + parameters.retentionInterval
+/ isCorrectResponse = {
+	return((values.trialType == 1 && this.responseText == parameters.sameKey) ||
+	(values.trialType == 2 && this.responseText == parameters.differentKey))
+}
+/ onTrialEnd = {
+	this.resetStimulusFrames();
+
+	if (this.responseText == parameters.sameKey) {
+		values.responseCategory = "same";
+	} else if (this.responseText == parameters.differentKey) {
+		values.responseCategory = "different";
+	}
+
+	values.feedback = this.correct;	//0-based selection
+
+	//summary variables:
+	list.acc.appendItem(this.correct);
+	if (this.correct) {
+		list.corrRT.appendItem(this.latency);
+	}
+
+	if (values.trialType == 1) {//same trials (signal trials)
+		list["hitsN" + values.n].appendItem(this.correct);
+	if (this.correct) {
+		list["hitsRTN" + values.n].appendItem(this.latency);
+	}
+} else {//different trials (noise trials)
+	list["crN" + values.n].appendItem(this.correct);
+	if (this.correct) {
+		list["crRTN" + values.n].appendItem(this.latency);
+	}
+}
+
+//store all square distances presented:
+for (var i=1; i<values.n; i++) {
+	for (var j=i+1; j<=values.n; j++) {
+		list.squareDistances.appendItem(expressions["d" + i + j]);
+	}
+}
+}
+/ branch = {
+	return trial.nIti;
+}
+</trial>
+
+
+<trial nIti>
+/ onTrialBegin = {
+	text.sameKeyReminderHL.skip = false;
+	text.differentKeyReminderHL.skip = false;
+	if (trial.n.responseText == parameters.differentKey) {
+		text.sameKeyReminderHL.skip = true;
+	} else {
+		text.differentKeyReminderHL.skip = true;
+	}
+}
+/ stimulusTimes = [0 = presentationSquare, sameKeyReminderHL, differentKeyReminderHL, feedback; 
+50 = sameKeyReminder, differentKeyReminder]
+/ validResponse = (parameters.leftResponseKey, parameters.rightResponseKey)//should show response buttons on touchscreen devices
+/ isValidResponse = {
+	return false;
+}
+/ trialDuration = parameters.feedbackDuration
+/ recordData = false
+</trial>
+
+//Note: the following trial can be used to double check the placement of the squares/probe
+<trial nDebug>
+/ onTrialBegin = {
+	values.n = 4;
+	values.index = list["n" + values.n + "Indices"].nextIndex;
+
+	//sample square positions
+	for (var i=1; i<=8;i++) {
+		if (i <= values.n) {
+			//sample square positions
+			values["x" + i] = list["n" + values.n + "PositionsX" + i].nextValue;
+			values["y" + i] = list["n" + values.n + "PositionsY" + i].nextValue;
+			//sample square color
+			values["color" + i] = list["n" + values.n + "Colors" + i].nextValue;
+			//prepare target stimuli
+			shape["target" + i].skip = false;
+		} else {
+			values["x" + i] = "";
+			values["y" + i] = "";
+			values["color" + i] = "";
+			shape["target" + i].skip = true;
+		}
+	}
+
+	//sample probe position
+	values.probe = list["n" + values.n + "ProbePosition"].nextValue;
+	values.probeX = values["x" + values.probe];
+	values.probeY = values["y" + values.probe];
+
+	//sample probe color
+	if (parameters.useOnlyArrayColorsForProbe) {
+		values.probeColor = list["n" + values.n + "ProbeColorCurrent"].nextValue;
+	} else {
+		values.probeColor = list["n" + values.n + "ProbeColorAll"].nextValue;
+	}
+	values.probeX += pct(0.5);
+	values.probeY += pct(0.5);
+
+	//store all square distances presented:
+	for (var i=1; i<values.n; i++) {
+		for (var j=i+1; j<=values.n; j++) {
+			list.squareDistances.appendItem(expressions["d" + i + j]);
+		}
+	}
+}
+/ stimulusTimes = [0 = clearScreen, presentationSquare, target1, target2, target3, target4, target5, target6, target7, target8, probe, debugInfo]
+/ validResponse = (parameters.leftResponseKey, parameters.rightResponseKey)
+/ beginResponseTime = 0
+/ isCorrectResponse = {
+	return((values.trialType == 1 && this.responseText == parameters.sameKey) ||
+	(values.trialType == 2 && this.responseText == parameters.differentKey))
+}
+/ postTrialPause = parameters.feedbackDuration
+/ responseMessage = (anyResponse, shape.presentationSquare, 0)
+</trial>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	BLOCKS
+**************************************************************************************************************
+**************************************************************************************************************
+
+<block intro>
+/ trials = [1 = intro1]
+</block>
+
+<block practiceN4>
+/ bgStim = (sameKeyReminder, differentKeyReminder)
+/ onBlockBegin = {values.n = 4; }
+/ trials = [
+	1 = getReady;
+	2-7 = trial.practiceN;
+]
+</block>
+
+<block n4TestStart>
+/ trials = [
+	1 = n4TestIntro;
+]
+</block>
+
+<block n4>
+/ bgStim = (sameKeyReminder, differentKeyReminder)
+/ onBlockBegin = {values.n = 4; }
+/ trials = [
+	1 = getReady;
+	2-61 = trial.n;
+]
+</block>
+
+<block practiceN6>
+/ bgStim = (sameKeyReminder, differentKeyReminder)
+/ onBlockBegin = {values.n = 6; }
+/ trials = [
+	1 = n6Practiceintro;
+	2 = getReady;
+	3-8 = trial.practiceN;
+]
+</block>
+
+<block n6TestStart>
+/ trials = [
+	1 = n6TestIntro;
+]
+</block>
+
+<block n6>
+/ bgStim = (sameKeyReminder, differentKeyReminder)
+/ onBlockBegin = {values.n = 6; }
+/ trials = [
+	1 = getReady;
+	2-61 = trial.n;
+]
+</block>
+
+<block practiceN8>
+/ bgStim = (sameKeyReminder, differentKeyReminder)
+/ onBlockBegin = {values.n = 8; }
+/ trials = [
+	1 = n8Practiceintro;
+	2 = getReady;
+	3-8 = trial.practiceN;
+]
+</block>
+
+<block n8TestStart>
+/ trials = [
+	1 = n8TestIntro;
+]
+</block>
+
+<block n8>
+/ bgStim = (sameKeyReminder, differentKeyReminder)
+/ onBlockBegin = {values.n = 8; }
+/ trials = [
+	1 = getReady;
+	2-61 = trial.n;
+]
+</block>
+
+******************************
+debug blocks
+******************************
+
+<text debugInfo>
+/ items = ("trialType = <%values.trialType%>, probePosition = <%values.probe%>")
+/ fontStyle = ("Arial", 1.5%, false, false, false, false, 5, 1)
+/ txColor = red
+/ position = (50%, 5%)
+</text>
+
+<block practiceN4Debug>
+/ onBlockBegin = {values.n=4; }
+/ trials = [
+	1-6 = practiceNDebug]
+</block>
+
+<block n4Debug>
+/ onBlockBegin = {values.n=4; }
+/ trials = [
+	1-60 = nDebug]
+</block>
+
+<block practiceN6Debug>
+/ onBlockBegin = {values.n = 6; }
+/ trials = [
+	1-6 = practiceNDebug]
+</block>
+
+<block n6Debug>
+/ onBlockBegin = {values.n=6; }
+/ trials = [
+	1-60 = nDebug]
+</block>
+
+<block practiceN8Debug>
+/ onBlockBegin = {values.n = 8; }
+/ trials = [
+	1-6 = practiceNDebug]
+</block>
+
+<block n8Debug>
+/ onBlockBegin = {values.n=8; }
+/ trials = [
+	1-60 = nDebug]
+</block>
+
+
+**************************************************************************************************************
+**************************************************************************************************************
+	EXPERIMENT 
+**************************************************************************************************************
+**************************************************************************************************************
+
+<expt a>
+/ onExptBegin = {
+	if (parameters.sameKey == parameters.leftResponseKey) {
+		text.sameKeyReminder.x = 25%;
+		text.differentKeyReminder.x = 75%;
+	} else {
+		text.sameKeyReminder.x = 75%;
+		text.differentKeyReminder.x = 25%;
+	}
+
+	//check the allowed minimum/maximum sizes are used:
+	if (parameters.squareHeight > 15%) {
+		parameters.squareHeight = 15%;
+	}
+	if (parameters.presentationSquareHeight > 85%) {
+		parameters.presentationSquareHeight = 85%;
+	}
+	if (parameters.presentationSquareHeight < 80% && parameters.runFixedDesign == true) {
+		parameters.presentationSquareHeight = 80%;
+	}
+
+	//check the allowed buffersize
+	if (parameters.buffer > 5%) {
+		parameters.buffer = 5%;
+	}
+}
+
+/ blocks = [
+	//the first six blocks only run if parameters.runFixedDesign == false (otherwise they are skipped)
+	1 = generateN8;
+	2 = generatePracticeN8;
+	3 = generateN6;
+	4 = generatePracticeN6;
+	5 = generateN4;
+	6 = generatePracticeN4;	
+	7 = intro;
+	8 = practiceN4;
+	9 = n4TestStart;
+	10 = n4;
+	11 = practiceN6;
+	12 = n6TestStart;
+	13 = n6;
+	14 = practiceN8;
+	15 = n8TestStart;
+	16 = n8;
+]
+</expt>
+
+
+<monkey>
+/ latencyDistribution = normal(1000, 50)
+</monkey>
+
+
+**************************************************************************************************************
+												End of File
+**************************************************************************************************************
