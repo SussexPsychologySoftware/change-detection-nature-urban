@@ -2915,16 +2915,16 @@ for (var i=1; i<values.n; i++) {
 **************************************************************************************************************
 <video naturalVideo>
 / items = (
-"..\\Videos\\Nature\\Nat_2.mp4", 
-"..\\Videos\\Nature\\Nat_3.mp4",
-"..\\Videos\\Nature\\Nat_8.mp4",
-"..\\Videos\\Nature\\Nat_14.mp4",
-"..\\Videos\\Nature\\Nat_15.mp4",
-"..\\Videos\\Nature\\Nat_16.mp4",
-"..\\Videos\\Nature\\Nat_18.mp4",
-"..\\Videos\\Nature\\Nat_Stat_5.mp4",
-"..\\Videos\\Nature\\Nat_Stat_6.mp4",
-"..\\Videos\\Nature\\Nat_Stat_7.mp4"
+"..\\Videos To Use\\Nature\\Nat_2.mp4", 
+"..\\Videos To Use\\Nature\\Nat_3.mp4",
+"..\\Videos To Use\\Nature\\Nat_8.mp4",
+"..\\Videos To Use\\Nature\\Nat_14.mp4",
+"..\\Videos To Use\\Nature\\Nat_15.mp4",
+"..\\Videos To Use\\Nature\\Nat_16.mp4",
+"..\\Videos To Use\\Nature\\Nat_18.mp4",
+"..\\Videos To Use\\Nature\\Nat_Stat_5.mp4",
+"..\\Videos To Use\\Nature\\Nat_Stat_6.mp4",
+"..\\Videos To Use\\Nature\\Nat_Stat_7.mp4"
 )
 / size = (80%, 80%)
 / position = (50%, 50%)
@@ -2933,16 +2933,16 @@ for (var i=1; i<values.n; i++) {
 
 <video urbanVideo>
 / items = (
-"..\\Videos\\Urban\\Urb_1.mp4", 
-"..\\Videos\\Urban\\Urb_7.mp4",
-"..\\Videos\\Urban\\Urb_12.mp4",
-"..\\Videos\\Urban\\Urb_13.mp4",
-"..\\Videos\\Urban\\Urb_16.mp4",
-"..\\Videos\\Urban\\Urb_19.mp4",
-"..\\Videos\\Urban\\Urb_20.mp4",
-"..\\Videos\\Urban\\Urb_21.mp4",
-"..\\Videos\\Urban\\Urb_Stat_2.mp4",
-"..\\Videos\\Urban\\Urb_Stat_4.mp4",
+"..\\Videos To Use\\Urban\\Urb_1.mp4", 
+"..\\Videos To Use\\Urban\\Urb_7.mp4",
+"..\\Videos To Use\\Urban\\Urb_12.mp4",
+"..\\Videos To Use\\Urban\\Urb_13.mp4",
+"..\\Videos To Use\\Urban\\Urb_16.mp4",
+"..\\Videos To Use\\Urban\\Urb_19.mp4",
+"..\\Videos To Use\\Urban\\Urb_20.mp4",
+"..\\Videos To Use\\Urban\\Urb_21.mp4",
+"..\\Videos To Use\\Urban\\Urb_Stat_2.mp4",
+"..\\Videos To Use\\Urban\\Urb_Stat_4.mp4",
 )
 / size = (80%, 80%)
 / position = (50%, 50%)
