@@ -701,7 +701,7 @@ summary data file
 ***********************
 <summaryData>
 / columns = (inquisit.version, computer.platform, script.startDate, script.startTime, 
-script.subjectId, script.groupId, script.sessionId, 
+script.subjectId, script.groupId, script.sessionId,
 script.elapsedTime, script.completed, 
 parameters.runFixedDesign, parameters.useOnlyArrayColorsForProbe,
 parameters.presentationSquareHeight, parameters.squareHeight, expressions.squareHeightMM,expressions.squareDistanceCheck,
@@ -2911,7 +2911,7 @@ for (var i=1; i<values.n; i++) {
 
 
 **************************************************************************************************************
-    VIDEO PARAMETERS AND STIMULI
+    VIDEO STIMULI
 **************************************************************************************************************
 <video naturalVideo>
 / items = (
@@ -2954,11 +2954,29 @@ for (var i=1; i<values.n; i++) {
     video.naturalVideo.skip = ( script.groupId == 1);
     video.urbanVideo.skip = (script.groupId == 2);
 }
-/ validresponse = (" ")
+/ timeout = 0
 / stimulusframes = [1 = naturalVideo, urbanVideo]
-/ recorddata = false
-/ timeout = 60000
 </trial>
+
+<text getReadyVideos>
+/ items = ("<center><h1>Get Ready!</h1><br><br><p>You will now see one or several videos before new trials begin.</p></center>")
+/ fontStyle = ("Arial", 3.00%, false, false, false, false, 5, 1)
+</text>
+
+<trial getReadyVideos>
+/ stimulusFrames = [1 = clearScreen, canvas, getReadyVideos]
+/ timeout = parameters.readyDuration
+/ errorMessage = false
+/ recordData = false
+</trial>
+
+<block blockStartVideos>
+/ trials = [   
+	1 = getReadyVideos;
+	2 = videoBreak;
+    3 = videoBreak;
+    4 = videoBreak;]
+</block>
 
 **************************************************************************************************************
 **************************************************************************************************************
@@ -2991,14 +3009,15 @@ for (var i=1; i<values.n; i++) {
 / onblockbegin = {values.n = 4;}
 / trials = [
     1 = getReady;
-    2 = videoBreak;
-    3 = videoBreak;
-    4 = videoBreak;
-    5-23 = trial.n;
+    2-22 = trial.n;
+	23 = getReadyVideos;
     24 = videoBreak;
-    25-43 = trial.n;
-    44 = videoBreak;
-    45-61 = trial.n
+	25 = getReady;
+    26-46 = trial.n;
+	47 = getReadyVideos;
+    48 = videoBreak;
+	49 = getReady;
+    50-70 = trial.n;
 ]
 </block>
 
@@ -3023,14 +3042,15 @@ for (var i=1; i<values.n; i++) {
 / onblockbegin = {values.n = 6;}
 / trials = [
     1 = getReady;
-    2 = videoBreak;
-    3 = videoBreak;
-    4 = videoBreak;
-    5-23 = trial.n;
+    2-22 = trial.n;
+	23 = getReadyVideos;
     24 = videoBreak;
-    25-43 = trial.n;
-    44 = videoBreak;
-    45-61 = trial.n
+	25 = getReady;
+    26-46 = trial.n;
+	47 = getReadyVideos;
+    48 = videoBreak;
+	49 = getReady;
+    50-70 = trial.n;
 ]
 </block>
 
@@ -3055,14 +3075,15 @@ for (var i=1; i<values.n; i++) {
 / onblockbegin = {values.n = 8;}
 / trials = [
     1 = getReady;
-    2 = videoBreak;
-    3 = videoBreak;
-    4 = videoBreak;
-    5-23 = trial.n;
+    2-22 = trial.n;
+	23 = getReadyVideos;
     24 = videoBreak;
-    25-43 = trial.n;
-    44 = videoBreak;
-    45-61 = trial.n
+	25 = getReady;
+    26-46 = trial.n;
+	47 = getReadyVideos;
+    48 = videoBreak;
+	49 = getReady;
+    50-70 = trial.n;
 ]
 </block>
 
@@ -3158,13 +3179,16 @@ debug blocks
 	7 = intro;
 	8 = practiceN4;
 	9 = n4TestStart;
-	10 = n4;
-	11 = practiceN6;
-	12 = n6TestStart;
-	13 = n6;
-	14 = practiceN8;
-	15 = n8TestStart;
-	16 = n8;
+	10 = blockStartVideos;
+	11 = n4;
+	12 = practiceN6;
+	13 = n6TestStart;
+	14 = blockStartVideos;
+	15 = n6;
+	16 = practiceN8;
+	17 = n8TestStart;
+	18 = blockStartVideos;
+	19 = n8;
 ]
 
 // FOR TESTING VIDEO
