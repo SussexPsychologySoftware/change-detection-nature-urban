@@ -2913,10 +2913,6 @@ for (var i=1; i<values.n; i++) {
 **************************************************************************************************************
     VIDEO PARAMETERS AND STIMULI
 **************************************************************************************************************
-<parameters>
-/ videoCondition = "natural"    // Can be "natural" or "urban"
-</parameters>
-
 <video naturalVideo>
 / items = (
 "..\\Videos\\Nature\\Nat_2.mp4", 
@@ -2955,8 +2951,8 @@ for (var i=1; i<values.n; i++) {
 
 <trial videoBreak>
 / ontrialbegin = {
-    video.naturalVideo.skip = (parameters.videoCondition != "natural");
-    video.urbanVideo.skip = (parameters.videoCondition == "natural");
+    video.naturalVideo.skip = ( script.groupId == 1);
+    video.urbanVideo.skip = (script.groupId == 2);
 }
 / validresponse = (" ")
 / stimulusframes = [1 = naturalVideo, urbanVideo]
