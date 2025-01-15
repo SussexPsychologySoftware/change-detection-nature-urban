@@ -1,0 +1,1689 @@
+<usermanual>
+___________________________________________________________________________________________________________________	
+
+											*Change Detection Task: HELPER SCRIPT*
+___________________________________________________________________________________________________________________	
+
+Script Author: Katja Borchert, Ph.D. (katjab@millisecond.com) for Millisecond Software, LLC
+Date: 11-25-2020
+last updated:  03-08-2024 by K. Borchert (katjab@millisecond.com) for Millisecond Software, LLC
+
+Script Copyright © 03-08-2024 Millisecond Software
+
+___________________________________________________________________________________________________________________
+BACKGROUND INFO 	
+___________________________________________________________________________________________________________________	
+
+This script is a helper script to script changedetectiontask.iqx.
+It computes the positions/colors of the display squares if random lists (not the default lists)
+should be used.
+
+This script empties out the default lists and generates new lists on the fly.
+</usermanual>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	VALUES: automatically updated
+**************************************************************************************************************
+**************************************************************************************************************
+
+<values>
+/countTrials = 0
+
+/x1_px = ""
+/y1_px = ""
+/x2_px = ""
+/y2_px = ""
+/x3_px = ""
+/y3_px = ""
+/x4_px = ""
+/y4_px = ""
+/x5_px = ""
+/y5_px = ""
+/x6_px = ""
+/y6_px = ""
+/x7_px = ""
+/y7_px = ""
+/x8_px = ""
+/y8_px = ""
+
+/diff_x1 = 0
+/diff_y1 = 0
+/diff_x2 = 0
+/diff_y2 = 0
+
+/countloops = 0
+/countloops2 = 0
+/stop = 0
+/repeat = 0
+/valid = 0
+
+/probeColor2 = ""
+/avoid = 0
+
+/countValid_N8 = 0
+/countValid_practiceN8 = 0
+/countValid_N6 = 0
+/countValid_practiceN6 = 0
+/countValid_N4 = 0
+/countValid_practiceN4 = 0
+</values>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	EXPRESSIONS
+**************************************************************************************************************
+**************************************************************************************************************
+
+<expressions>
+/buffer_inpx = display.getPixelsY(parameters.buffer)
+/buffer_inmm = display.getmmy(expressions.buffer_inpx)
+
+/center_x_inpx = display.getPixelsX(shape.actualPresentationSquare.hposition)
+/center_y_inpx = display.getPixelsY(shape.actualPresentationSquare.vposition)
+
+/max_left = 
+		expressions.center_x_inpx - 0.5*(display.getPixelsX(shape.actualPresentationSquare.width)) + 0.5*(display.getPixelsX(shape.target1.width));
+ 
+/max_right = 
+		expressions.center_x_inpx + 0.5*(display.getPixelsX(shape.actualPresentationSquare.width)) - 0.5*(display.getPixelsX(shape.target1.width));
+
+/max_top = 
+		expressions.center_y_inpx - 0.5*(display.getPixelsY(shape.actualPresentationSquare.height)) + 0.5*(display.getPixelsY(shape.target1.height));
+
+/max_bottom = 
+		expressions.center_y_inpx + 0.5*(display.getPixelsY(shape.actualPresentationSquare.height)) - 0.5*(display.getPixelsY(shape.target1.height));
+
+		
+/squareHeight_px = display.getPixelsY(shape.target1.height)			
+/targetRadius = sqrt( (display.getPixelsY(shape.target1.height/2)*display.getPixelsY(shape.target1.height/2)) + 
+(display.getPixelsY(shape.target1.height/2)*display.getPixelsY(shape.target1.height/2)))
+
+/debug = display.getPixelsY(parameters.squareHeight)
+/debug2 = display.getmmy(expressions.debug)
+
+/minimumTargetDistance = (2*expressions.targetRadius) + display.getPixelsY(parameters.buffer); //minimum distance btw. centers of target shapes
+	
+/miniumTargetDistance_inpercentcanvasheight = floor(display.getpercenty(expressions.minimumTargetDistance))			
+/stim_x = 
+	rand(expressions.max_left, expressions.max_right);
+/stim_y = 
+	rand(expressions.max_top, expressions.max_bottom);
+	
+
+/distance = sqrt((values.diff_x1 - values.diff_x2)*(values.diff_x1 - values.diff_x2) + 
+(values.diff_y1 - values.diff_y2)*(values.diff_y1 - values.diff_y2))
+	
+	
+/generateTargetShapePositions_1 = {
+	values.x1_px = expressions.stim_x;
+	values.y1_px = expressions.stim_y;		
+}
+/generateTargetShapePositions_2 = {
+	var checksCriteria = false;
+	var d12 = "";
+
+	while (!checksCriteria){
+		values.x2_px = expressions.stim_x;
+		values.y2_px = expressions.stim_y;	
+		values.diff_x1 = values.x1_px;
+		values.diff_y1 = values.y1_px;
+		values.diff_x2 = values.x2_px;
+		values.diff_y2 = values.y2_px;
+		d12 = expressions.distance;
+		if (d12 > expressions.minimumTargetDistance){
+			checksCriteria = true;
+		}		
+	}
+}
+/generateTargetShapePositions_3 = {
+	var checksCriteria = false;
+	var d13 = "";
+	var d23 = "";
+	
+	values.countloops = 0;
+	while (!checksCriteria && values.countloops < 500){
+		values.countloops += 1;
+		
+		values.x3_px = expressions.stim_x;
+		values.y3_px = expressions.stim_y;	
+		
+		//check against shape1:
+		values.diff_x1 = values.x1_px;
+		values.diff_y1 = values.y1_px;
+		values.diff_x2 = values.x3_px;
+		values.diff_y2 = values.y3_px;
+		d13 = expressions.distance;
+		
+		//check against shape2:
+		values.diff_x1 = values.x2_px;
+		values.diff_y1 = values.y2_px;
+		values.diff_x2 = values.x3_px;
+		values.diff_y2 = values.y3_px;
+		d23 = expressions.distance;		
+		
+		//check if targetshape is okay
+		if (d13 > expressions.minimumTargetDistance)
+			if (d23 > expressions.minimumTargetDistance)
+				checksCriteria = true;	
+	}
+	
+	if (values.countloops >= 500){
+		values.repeat = 1;
+	}	
+}
+/generateTargetShapePositions_4 = {
+	var checksCriteria = false;
+	var d14 = "";
+	var d24 = "";
+	var d34 = "";
+	
+	values.countloops = 0;
+	while (!checksCriteria && values.countloops < 500){
+		values.countloops += 1;
+		
+		values.x4_px = expressions.stim_x;
+		values.y4_px = expressions.stim_y;	
+		
+		//check against shape1:
+		values.diff_x1 = values.x1_px;
+		values.diff_y1 = values.y1_px;
+		values.diff_x2 = values.x4_px;
+		values.diff_y2 = values.y4_px;
+		d14 = expressions.distance;
+		
+		//check against shape2:
+		values.diff_x1 = values.x2_px;
+		values.diff_y1 = values.y2_px;
+		values.diff_x2 = values.x4_px;
+		values.diff_y2 = values.y4_px;
+		d24 = expressions.distance;	
+	
+		//check against shape3:
+		values.diff_x1 = values.x3_px;
+		values.diff_y1 = values.y3_px;
+		values.diff_x2 = values.x4_px;
+		values.diff_y2 = values.y4_px;
+		d34 = expressions.distance;		
+		
+		//check if targetshape is okay
+		if (d14 > expressions.minimumTargetDistance)
+			if (d24 > expressions.minimumTargetDistance)
+				if (d34 > expressions.minimumTargetDistance)
+					checksCriteria = true;
+	}
+	
+	if (values.countloops >= 500){
+		values.repeat = 1;
+	}	
+}
+
+/generateTargetShapePositions_5 = {
+	var checksCriteria = false;
+	var d15 = "";
+	var d25 = "";
+	var d35 = "";
+	var d45 = "";
+	
+	values.countloops = 0;
+	while (!checksCriteria && values.countloops < 500){
+		values.countloops += 1;
+		
+		values.x5_px = expressions.stim_x;
+		values.y5_px = expressions.stim_y;	
+		
+		//check against shape1:
+		values.diff_x1 = values.x1_px;
+		values.diff_y1 = values.y1_px;
+		values.diff_x2 = values.x5_px;
+		values.diff_y2 = values.y5_px;
+		d15 = expressions.distance;
+		
+		//check against shape2:
+		values.diff_x1 = values.x2_px;
+		values.diff_y1 = values.y2_px;
+		values.diff_x2 = values.x5_px;
+		values.diff_y2 = values.y5_px;
+		d25 = expressions.distance;	
+	
+		//check against shape3:
+		values.diff_x1 = values.x3_px;
+		values.diff_y1 = values.y3_px;
+		values.diff_x2 = values.x5_px;
+		values.diff_y2 = values.y5_px;
+		d35 = expressions.distance;	
+	
+		//check against shape4:
+		values.diff_x1 = values.x4_px;
+		values.diff_y1 = values.y4_px;
+		values.diff_x2 = values.x5_px;
+		values.diff_y2 = values.y5_px;
+		d45 = expressions.distance;		
+		
+		//check if targetshape is okay
+		if (d15 > expressions.minimumTargetDistance)
+			if (d25 > expressions.minimumTargetDistance)
+					if (d35 > expressions.minimumTargetDistance)
+						if (d45 > expressions.minimumTargetDistance)
+							checksCriteria = true;
+	}
+	
+	if (values.countloops >= 500){
+		values.repeat = 1;
+	}
+}
+
+/generateTargetShapePositions_6 = {
+	var checksCriteria = false;
+	var d16 = "";
+	var d26 = "";
+	var d36 = "";
+	var d46 = "";
+	var d56 = "";	
+	
+	values.countloops = 0;
+	while (!checksCriteria && values.countloops < 500){
+		values.countloops += 1;
+		
+		values.x6_px = expressions.stim_x;
+		values.y6_px = expressions.stim_y;	
+		
+		//check against shape1:
+		values.diff_x1 = values.x1_px;
+		values.diff_y1 = values.y1_px;
+		values.diff_x2 = values.x6_px;
+		values.diff_y2 = values.y6_px;
+		d16 = expressions.distance;
+		
+		//check against shape2:
+		values.diff_x1 = values.x2_px;
+		values.diff_y1 = values.y2_px;
+		values.diff_x2 = values.x6_px;
+		values.diff_y2 = values.y6_px;
+		d26 = expressions.distance;	
+	
+		//check against shape3:
+		values.diff_x1 = values.x3_px;
+		values.diff_y1 = values.y3_px;
+		values.diff_x2 = values.x6_px;
+		values.diff_y2 = values.y6_px;
+		d36 = expressions.distance;	
+	
+		//check against shape4:
+		values.diff_x1 = values.x4_px;
+		values.diff_y1 = values.y4_px;
+		values.diff_x2 = values.x6_px;
+		values.diff_y2 = values.y6_px;
+		d46 = expressions.distance;	
+	
+		//check against shape5:
+		values.diff_x1 = values.x5_px;
+		values.diff_y1 = values.y5_px;
+		values.diff_x2 = values.x6_px;
+		values.diff_y2 = values.y6_px;
+		d56 = expressions.distance;		
+		
+		//check if targetshape is okay
+		if (d16 > expressions.minimumTargetDistance)
+			if (d26 > expressions.minimumTargetDistance)
+					if (d36 > expressions.minimumTargetDistance)
+						if (d46 > expressions.minimumTargetDistance)
+							if (d56 > expressions.minimumTargetDistance)
+							checksCriteria = true;
+	}
+	if (values.countloops >= 500){
+		values.repeat = 1;
+	}
+}
+
+/generateTargetShapePositions_7 = {
+	var checksCriteria = false;
+	var d17 = "";
+	var d27 = "";
+	var d37 = "";
+	var d47 = "";
+	var d57 = "";
+	var d67 = "";		
+	
+	values.countloops = 0;
+	while (!checksCriteria && values.countloops < 500){
+		values.countloops += 1;
+		
+		values.x7_px = expressions.stim_x;
+		values.y7_px = expressions.stim_y;	
+		
+		//check against shape1:
+		values.diff_x1 = values.x1_px;
+		values.diff_y1 = values.y1_px;
+		values.diff_x2 = values.x7_px;
+		values.diff_y2 = values.y7_px;
+		d17 = expressions.distance;
+		
+		//check against shape2:
+		values.diff_x1 = values.x2_px;
+		values.diff_y1 = values.y2_px;
+		values.diff_x2 = values.x7_px;
+		values.diff_y2 = values.y7_px;
+		d27 = expressions.distance;	
+	
+		//check against shape3:
+		values.diff_x1 = values.x3_px;
+		values.diff_y1 = values.y3_px;
+		values.diff_x2 = values.x7_px;
+		values.diff_y2 = values.y7_px;
+		d37 = expressions.distance;	
+	
+		//check against shape4:
+		values.diff_x1 = values.x4_px;
+		values.diff_y1 = values.y4_px;
+		values.diff_x2 = values.x7_px;
+		values.diff_y2 = values.y7_px;
+		d47 = expressions.distance;	
+	
+		//check against shape5:
+		values.diff_x1 = values.x5_px;
+		values.diff_y1 = values.y5_px;
+		values.diff_x2 = values.x7_px;
+		values.diff_y2 = values.y7_px;
+		d57 = expressions.distance;
+
+		//check against shape6:
+		values.diff_x1 = values.x6_px;
+		values.diff_y1 = values.y6_px;
+		values.diff_x2 = values.x7_px;
+		values.diff_y2 = values.y7_px;
+		d67 = expressions.distance;			
+		
+		//check if targetshape is okay
+		if (d17 > expressions.minimumTargetDistance)
+			if (d27 > expressions.minimumTargetDistance)
+					if (d37 > expressions.minimumTargetDistance)
+						if (d47 > expressions.minimumTargetDistance)
+							if (d57 > expressions.minimumTargetDistance)
+								if (d67 > expressions.minimumTargetDistance)
+									checksCriteria = true;
+	}
+	if (values.countloops >= 500){
+		values.repeat = 1;
+	}
+}
+
+/generateTargetShapePositions_8 = {
+	var checksCriteria = false;
+	var d18 = "";
+	var d28 = "";
+	var d38 = "";
+	var d48 = "";
+	var d58 = "";
+	var d68 = "";
+	var d78 = "";		
+	
+	values.countloops = 0;
+	while (!checksCriteria && values.countloops < 500){
+		values.countloops += 1;
+		
+		values.x8_px = expressions.stim_x;
+		values.y8_px = expressions.stim_y;	
+		
+		//check against shape1:
+		values.diff_x1 = values.x1_px;
+		values.diff_y1 = values.y1_px;
+		values.diff_x2 = values.x8_px;
+		values.diff_y2 = values.y8_px;
+		d18 = expressions.distance;
+		
+		//check against shape2:
+		values.diff_x1 = values.x2_px;
+		values.diff_y1 = values.y2_px;
+		values.diff_x2 = values.x8_px;
+		values.diff_y2 = values.y8_px;
+		d28 = expressions.distance;	
+	
+		//check against shape3:
+		values.diff_x1 = values.x3_px;
+		values.diff_y1 = values.y3_px;
+		values.diff_x2 = values.x8_px;
+		values.diff_y2 = values.y8_px;
+		d38 = expressions.distance;	
+	
+		//check against shape4:
+		values.diff_x1 = values.x4_px;
+		values.diff_y1 = values.y4_px;
+		values.diff_x2 = values.x8_px;
+		values.diff_y2 = values.y8_px;
+		d48 = expressions.distance;	
+	
+		//check against shape5:
+		values.diff_x1 = values.x5_px;
+		values.diff_y1 = values.y5_px;
+		values.diff_x2 = values.x8_px;
+		values.diff_y2 = values.y8_px;
+		d58 = expressions.distance;
+
+		//check against shape6:
+		values.diff_x1 = values.x6_px;
+		values.diff_y1 = values.y6_px;
+		values.diff_x2 = values.x8_px;
+		values.diff_y2 = values.y8_px;
+		d68 = expressions.distance;	
+
+		//check against shape7:
+		values.diff_x1 = values.x7_px;
+		values.diff_y1 = values.y7_px;
+		values.diff_x2 = values.x8_px;
+		values.diff_y2 = values.y8_px;
+		d78 = expressions.distance;			
+		
+		//check if targetshape is okay
+		if (d18 > expressions.minimumTargetDistance)
+			if (d28 > expressions.minimumTargetDistance)
+					if (d38 > expressions.minimumTargetDistance)
+						if (d48 > expressions.minimumTargetDistance)
+							if (d58 > expressions.minimumTargetDistance)
+								if (d68 > expressions.minimumTargetDistance)
+									if (d78 > expressions.minimumTargetDistance)
+										checksCriteria = true;
+	}
+	if (values.countloops >= 500){
+		values.repeat = 1;
+	}
+}
+</expressions>	
+
+**************************************************************************************************************
+**************************************************************************************************************
+	STIMULI
+**************************************************************************************************************
+**************************************************************************************************************
+
+<text wait>
+/ items = ("Please wait, the program will begin shortly")
+/ erase = false
+</text>
+
+<shape actualPresentationSquare>
+/ shape = rectangle
+/ width = (parameters.presentationSquareHeight) *0.75
+/ height = (parameters.presentationSquareHeight)
+/ color = white
+/ erase = false
+/ position = (50%, 50%)
+</shape>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	LISTS	
+**************************************************************************************************************
+**************************************************************************************************************
+<list colors>
+/items = ("white", "red", "blue", "green", "black", "yellow", "purple")
+/ not = [
+	values.avoid;]
+/ resetinterval = 0
+/ selectionrate = always
+</list>
+
+//Note: list fills during runtime with the colors of the sampled display squares (per trial)
+<list currentColors>
+/ not = [
+	values.avoid;]
+</list>
+
+<list practiceN8_trialtype>
+/ items = (1,2)
+/ poolSize = 6
+/ replace = false
+</list>
+
+<list N8_trialtype>
+/ items = (1,2)
+/ poolSize = 60
+/ replace = false
+</list>
+
+<list practiceN6_trialtype>
+/ items = (1,2)
+/ poolSize = 6
+/ replace = false
+</list>
+
+<list N6_trialtype>
+/ items = (1,2)
+/ poolSize = 60
+/ replace = false
+</list>
+
+<list practiceN4_trialtype>
+/ items = (1,2)
+/ poolSize = 6
+/ replace = false
+</list>
+
+<list N4_trialtype>
+/ items = (1,2)
+/ poolSize = 60
+/ replace = false
+</list>
+
+<list N8_probepositions>
+/ items = (1, 2, 3, 4, 5, 6, 7, 8)
+/ replace = false
+</list>
+
+<list N6_probepositions>
+/ items = (1, 2, 3, 4, 5, 6)
+/ replace = false
+</list>
+
+<list N4_probepositions>
+/ items = (1, 2, 3, 4)
+/ replace = false
+</list>
+
+
+**************************************************************************************************************
+**************************************************************************************************************
+	TRIALS 	
+**************************************************************************************************************
+**************************************************************************************************************
+
+<trial generate_practiceN4>
+/ ontrialbegin = [
+	values.countTrials += 1;
+	values.repeat = 1;
+	values.valid = 1;	
+	values.countloops2 = 0;//helper variable to get out of potential endless loops
+	
+	while (values.repeat == 1 && values.countloops2 < 500){
+		values.countloops2 += 1;
+	
+		values.repeat = 0;
+		expressions.generateTargetShapePositions_1;
+		expressions.generateTargetShapePositions_2;
+		
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_3;			
+		}
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_4;			
+		}	
+	}
+
+	//proportional coordinates:
+	values.x1 = display.getpercentx(values.x1_px);
+	values.y1 = display.getpercenty(values.y1_px);
+	values.x2 = display.getpercentx(values.x2_px);
+	values.y2 = display.getpercenty(values.y2_px);
+	values.x3 = display.getpercentx(values.x3_px);
+	values.y3 = display.getpercenty(values.y3_px);
+	values.x4 = display.getpercentx(values.x4_px);
+	values.y4 = display.getpercenty(values.y4_px);
+
+	if (values.countloops2 >= 500){
+		values.valid = 0; //script would have been caught in an endless loop
+	} else {
+		list.colors.reset();
+		values.avoid = "";
+		values.color1 = list.colors.nextValue;
+		values.color2 = list.colors.nextValue;
+		values.color3 = list.colors.nextValue;	
+		values.color4 = list.colors.nextValue;	
+		list.currentColors.reset();
+		list.currentColors.appendItem(values.color1);
+		list.currentColors.appendItem(values.color2);
+		list.currentColors.appendItem(values.color3);
+		list.currentColors.appendItem(values.color4);
+	
+		values.trialtype = list.practiceN4_trialtype.nextValue;
+		values.probe = list.N4_probepositions.nextValue;
+		if (values.trialtype == 1){
+			if (values.probe == 1){
+				values.probeColor = values.color1;
+			} else if (values.probe == 2){
+				values.probeColor = values.color2;
+			} else if (values.probe == 3){
+				values.probeColor = values.color3;
+			} else if (values.probe == 4){
+				values.probeColor = values.color4;
+			}
+			values.probeColor2 = values.probeColor;
+		} else {
+			if (values.probe == 1){
+				values.avoid = values.color1;
+			} else if (values.probe == 2){
+				values.avoid = values.color2;
+			} else if (values.probe == 3){
+				values.avoid = values.color3;
+			} else if (values.probe == 4){
+				values.avoid = values.color4;
+			}
+			list.colors.reset();
+			values.probeColor = list.colors.nextValue;
+			values.probeColor2 = list.currentColors.nextValue;
+		}
+	}
+]
+/ stimulusframes = [1 = clearScreen, wait]
+/ ontrialend = [
+	if (values.valid == 1){
+		values.countValid_practiceN4 += 1;
+		
+		//add the randomly generated X and y coordinates to the corresponding lists
+		list.practiceN4_positions_x1.appendItem(values.x1);
+		list.practiceN4_positions_y1.appendItem(values.y1);
+		list.practiceN4_positions_x2.appendItem(values.x2);
+		list.practiceN4_positions_y2.appendItem(values.y2);	
+		list.practiceN4_positions_x3.appendItem(values.x3);
+		list.practiceN4_positions_y3.appendItem(values.y3);	
+		list.practiceN4_positions_x4.appendItem(values.x4);
+		list.practiceN4_positions_y4.appendItem(values.y4);	
+		
+		//add the randomly generated colors to the corresponding lists
+		list.practiceN4_colors_1.appendItem(values.color1);		
+		list.practiceN4_colors_2.appendItem(values.color2);	
+		list.practiceN4_colors_3.appendItem(values.color3);	
+		list.practiceN4_colors_4.appendItem(values.color4);
+	
+		//add probe color to the corresponding lists
+		list.practiceN4_trialTypes.appendItem(values.trialtype);
+		list.practiceN4_probePosition.appendItem(values.probe);
+		list.practiceN4_probeColor_all.appendItem(values.probeColor);
+		list.practiceN4_probeColor_current.appendItem(values.probeColor2);	
+	}//if valid == 0, the countValid_practiceN4 is not increased and the trial is run again;
+]
+/ branch = [
+	if (values.countValid_practiceN4 < 6){
+		return trial.generate_practiceN4;
+	}
+]
+/ trialduration = 0
+/ recorddata = false
+</trial>
+
+<trial generate_N4>
+/ ontrialbegin = [
+	values.countTrials += 1;
+	values.repeat = 1;
+	values.valid = 1;	
+	values.countloops2 = 0;//helper variable to get out of potential endless loops
+	
+	while (values.repeat == 1 && values.countloops2 < 500){
+		values.countloops2 += 1;
+	
+		values.repeat = 0;
+		expressions.generateTargetShapePositions_1;
+		expressions.generateTargetShapePositions_2;
+		
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_3;			
+		}
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_4;			
+		}		
+	}
+
+	//proportional coordinates:
+	values.x1 = display.getpercentx(values.x1_px);
+	values.y1 = display.getpercenty(values.y1_px);
+	values.x2 = display.getpercentx(values.x2_px);
+	values.y2 = display.getpercenty(values.y2_px);
+	values.x3 = display.getpercentx(values.x3_px);
+	values.y3 = display.getpercenty(values.y3_px);
+	values.x4 = display.getpercentx(values.x4_px);
+	values.y4 = display.getpercenty(values.y4_px);	
+
+	if (values.countloops2 >= 500){
+		values.valid = 0; //script would have been caught in an endless loop
+	} else {
+		list.colors.reset();
+		values.avoid = "";
+		values.color1 = list.colors.nextValue;
+		values.color2 = list.colors.nextValue;
+		values.color3 = list.colors.nextValue;	
+		values.color4 = list.colors.nextValue;	
+		list.currentColors.reset();
+		list.currentColors.appendItem(values.color1);
+		list.currentColors.appendItem(values.color2);
+		list.currentColors.appendItem(values.color3);
+		list.currentColors.appendItem(values.color4);	
+	
+		values.trialtype = list.N4_trialtype.nextValue;
+		values.probe = list.N4_probepositions.nextValue;
+		if (values.trialtype == 1){
+			if (values.probe == 1){
+				values.probeColor = values.color1;
+			} else if (values.probe == 2){
+				values.probeColor = values.color2;
+			} else if (values.probe == 3){
+				values.probeColor = values.color3;
+			} else if (values.probe == 4){
+				values.probeColor = values.color4;
+			}
+			values.probeColor2 = values.probeColor;
+		} else {
+			if (values.probe == 1){
+				values.avoid = values.color1;
+			} else if (values.probe == 2){
+				values.avoid = values.color2;
+			} else if (values.probe == 3){
+				values.avoid = values.color3;
+			} else if (values.probe == 4){
+				values.avoid = values.color4;
+			}
+			list.colors.reset();
+			values.probeColor = list.colors.nextValue;
+			values.probeColor2 = list.currentColors.nextValue;
+		}
+	}
+]
+/ stimulusframes = [1 = clearScreen, wait]
+/ ontrialend = [
+	if (values.valid == 1){
+		values.countValid_N4 += 1;
+		
+		//add the randomly generated X and y coordinates to the corresponding lists
+		list.N4_positions_x1.appendItem(values.x1);
+		list.N4_positions_y1.appendItem(values.y1);
+		list.N4_positions_x2.appendItem(values.x2);
+		list.N4_positions_y2.appendItem(values.y2);	
+		list.N4_positions_x3.appendItem(values.x3);
+		list.N4_positions_y3.appendItem(values.y3);	
+		list.N4_positions_x4.appendItem(values.x4);
+		list.N4_positions_y4.appendItem(values.y4);	
+		
+		//add the randomly generated colors to the corresponding lists
+		list.N4_colors_1.appendItem(values.color1);		
+		list.N4_colors_2.appendItem(values.color2);	
+		list.N4_colors_3.appendItem(values.color3);	
+		list.N4_colors_4.appendItem(values.color4);
+	
+		//add probe color to the corresponding lists
+		list.N4_trialTypes.appendItem(values.trialtype);
+		list.N4_probePosition.appendItem(values.probe);
+		list.N4_probeColor_all.appendItem(values.probeColor);
+		list.N4_probeColor_current.appendItem(values.probeColor2);	
+	}
+]
+/ branch = [
+	if (values.countValid_N4 < 60){
+		return trial.generate_N4;
+	}
+]
+/ trialduration = 0
+/ recorddata = false
+</trial>
+
+<trial generate_practiceN6>
+/ ontrialbegin = [
+	values.countTrials += 1;
+	values.repeat = 1;
+	values.valid = 1;	
+	values.countloops2 = 0;//helper variable to get out of potential endless loops
+	
+	while (values.repeat == 1 && values.countloops2 < 500){
+		values.countloops2 += 1;
+	
+		values.repeat = 0;
+		expressions.generateTargetShapePositions_1;
+		expressions.generateTargetShapePositions_2;
+		
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_3;			
+		}
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_4;			
+		}
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_5;			
+		}
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_6;			
+		}			
+	}
+
+	//proportional coordinates:
+	values.x1 = display.getpercentx(values.x1_px);
+	values.y1 = display.getpercenty(values.y1_px);
+	values.x2 = display.getpercentx(values.x2_px);
+	values.y2 = display.getpercenty(values.y2_px);
+	values.x3 = display.getpercentx(values.x3_px);
+	values.y3 = display.getpercenty(values.y3_px);
+	values.x4 = display.getpercentx(values.x4_px);
+	values.y4 = display.getpercenty(values.y4_px);
+	values.x5 = display.getpercentx(values.x5_px);
+	values.y5 = display.getpercenty(values.y5_px);
+	values.x6 = display.getpercentx(values.x6_px);
+	values.y6 = display.getpercenty(values.y6_px);
+
+	if (values.countloops2 >= 500){
+		values.valid = 0; //script would have been caught in an endless loop
+	} else {
+		list.colors.reset();
+		values.avoid = "";
+		values.color1 = list.colors.nextValue;
+		values.color2 = list.colors.nextValue;
+		values.color3 = list.colors.nextValue;	
+		values.color4 = list.colors.nextValue;	
+		values.color5 = list.colors.nextValue;	
+		values.color6 = list.colors.nextValue;	
+		list.currentColors.reset();
+		list.currentColors.appendItem(values.color1);
+		list.currentColors.appendItem(values.color2);
+		list.currentColors.appendItem(values.color3);
+		list.currentColors.appendItem(values.color4);
+		list.currentColors.appendItem(values.color5);
+		list.currentColors.appendItem(values.color6);
+	
+		values.trialtype = list.practiceN6_trialtype.nextValue;
+		values.probe = list.N6_probepositions.nextValue;
+		if (values.trialtype == 1){
+			if (values.probe == 1){
+				values.probeColor = values.color1;
+			} else if (values.probe == 2){
+				values.probeColor = values.color2;
+			} else if (values.probe == 3){
+				values.probeColor = values.color3;
+			} else if (values.probe == 4){
+				values.probeColor = values.color4;
+			} else if (values.probe == 5){
+				values.probeColor = values.color5;
+			} else if (values.probe == 6){
+				values.probeColor = values.color6;
+			}
+			values.probeColor2 = values.probeColor;
+		} else {
+			if (values.probe == 1){
+				values.avoid = values.color1;
+			} else if (values.probe == 2){
+				values.avoid = values.color2;
+			} else if (values.probe == 3){
+				values.avoid = values.color3;
+			} else if (values.probe == 4){
+				values.avoid = values.color4;
+			} else if (values.probe == 5){
+				values.avoid = values.color5;
+			} else if (values.probe == 6){
+				values.avoid = values.color6;
+			}
+			list.colors.reset();
+			values.probeColor = list.colors.nextValue;
+			values.probeColor2 = list.currentColors.nextValue;
+		}
+	}
+]
+/ stimulusframes = [1 = clearScreen, wait]
+/ ontrialend = [
+	if (values.valid == 1){
+		values.countValid_practiceN6 += 1;
+		
+		//add the randomly generated X and y coordinates to the corresponding lists
+		list.practiceN6_positions_x1.appendItem(values.x1);
+		list.practiceN6_positions_y1.appendItem(values.y1);
+		list.practiceN6_positions_x2.appendItem(values.x2);
+		list.practiceN6_positions_y2.appendItem(values.y2);	
+		list.practiceN6_positions_x3.appendItem(values.x3);
+		list.practiceN6_positions_y3.appendItem(values.y3);	
+		list.practiceN6_positions_x4.appendItem(values.x4);
+		list.practiceN6_positions_y4.appendItem(values.y4);	
+		list.practiceN6_positions_x5.appendItem(values.x5);
+		list.practiceN6_positions_y5.appendItem(values.y5);
+		list.practiceN6_positions_x6.appendItem(values.x6);
+		list.practiceN6_positions_y6.appendItem(values.y6);	
+		
+		//add the randomly generated colors to the corresponding lists
+		list.practiceN6_colors_1.appendItem(values.color1);		
+		list.practiceN6_colors_2.appendItem(values.color2);	
+		list.practiceN6_colors_3.appendItem(values.color3);	
+		list.practiceN6_colors_4.appendItem(values.color4);
+		list.practiceN6_colors_5.appendItem(values.color5);	
+		list.practiceN6_colors_6.appendItem(values.color6);	
+	
+		//add probe color to the corresponding lists
+		list.practiceN6_trialTypes.appendItem(values.trialtype);
+		list.practiceN6_probePosition.appendItem(values.probe);
+		list.practiceN6_probeColor_all.appendItem(values.probeColor);
+		list.practiceN6_probeColor_current.appendItem(values.probeColor2);	
+	}
+]
+/ branch = [
+	if (values.countValid_practiceN6 < 6){
+		return trial.generate_practiceN6;
+	}
+]
+/ trialduration = 0
+/ recorddata = false
+</trial>
+
+<trial generate_N6>
+/ ontrialbegin = [
+	values.countTrials += 1;
+	values.repeat = 1;
+	values.valid = 1;	
+	values.countloops2 = 0;//helper variable to get out of potential endless loops
+	
+	while (values.repeat == 1 && values.countloops2 < 500){
+		values.countloops2 += 1;
+	
+		values.repeat = 0;
+		expressions.generateTargetShapePositions_1;
+		expressions.generateTargetShapePositions_2;
+		
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_3;			
+		}
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_4;			
+		}
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_5;			
+		}
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_6;			
+		}				
+	}
+
+	//proportional coordinates:
+	values.x1 = display.getpercentx(values.x1_px);
+	values.y1 = display.getpercenty(values.y1_px);
+	values.x2 = display.getpercentx(values.x2_px);
+	values.y2 = display.getpercenty(values.y2_px);
+	values.x3 = display.getpercentx(values.x3_px);
+	values.y3 = display.getpercenty(values.y3_px);
+	values.x4 = display.getpercentx(values.x4_px);
+	values.y4 = display.getpercenty(values.y4_px);
+	values.x5 = display.getpercentx(values.x5_px);
+	values.y5 = display.getpercenty(values.y5_px);
+	values.x6 = display.getpercentx(values.x6_px);
+	values.y6 = display.getpercenty(values.y6_px);
+
+	if (values.countloops2 >= 500){
+		values.valid = 0; //script would have been caught in an endless loop
+	} else {
+		list.colors.reset();
+		values.avoid = "";
+		values.color1 = list.colors.nextValue;
+		values.color2 = list.colors.nextValue;
+		values.color3 = list.colors.nextValue;	
+		values.color4 = list.colors.nextValue;	
+		values.color5 = list.colors.nextValue;	
+		values.color6 = list.colors.nextValue;	
+		list.currentColors.reset();
+		list.currentColors.appendItem(values.color1);
+		list.currentColors.appendItem(values.color2);
+		list.currentColors.appendItem(values.color3);
+		list.currentColors.appendItem(values.color4);
+		list.currentColors.appendItem(values.color5);
+		list.currentColors.appendItem(values.color6);	
+	
+		values.trialtype = list.N6_trialtype.nextValue;
+		values.probe = list.N6_probepositions.nextValue;
+		if (values.trialtype == 1){
+			if (values.probe == 1){
+				values.probeColor = values.color1;
+			} else if (values.probe == 2){
+				values.probeColor = values.color2;
+			} else if (values.probe == 3){
+				values.probeColor = values.color3;
+			} else if (values.probe == 4){
+				values.probeColor = values.color4;
+			} else if (values.probe == 5){
+				values.probeColor = values.color5;
+			} else if (values.probe == 6){
+				values.probeColor = values.color6;
+			}
+			values.probeColor2 = values.probeColor;
+		} else {
+			if (values.probe == 1){
+				values.avoid = values.color1;
+			} else if (values.probe == 2){
+				values.avoid = values.color2;
+			} else if (values.probe == 3){
+				values.avoid = values.color3;
+			} else if (values.probe == 4){
+				values.avoid = values.color4;
+			} else if (values.probe == 5){
+				values.avoid = values.color5;
+			} else if (values.probe == 6){
+				values.avoid = values.color6;
+			}
+			list.colors.reset();
+			values.probeColor = list.colors.nextValue;
+			values.probeColor2 = list.currentColors.nextValue;
+		}
+	}
+]
+/ stimulusframes = [1 = clearScreen, wait]
+/ ontrialend = [
+	if (values.valid == 1){
+		values.countValid_N6 += 1;
+		
+		//add the randomly generated X and y coordinates to the corresponding lists
+		list.N6_positions_x1.appendItem(values.x1);
+		list.N6_positions_y1.appendItem(values.y1);
+		list.N6_positions_x2.appendItem(values.x2);
+		list.N6_positions_y2.appendItem(values.y2);	
+		list.N6_positions_x3.appendItem(values.x3);
+		list.N6_positions_y3.appendItem(values.y3);	
+		list.N6_positions_x4.appendItem(values.x4);
+		list.N6_positions_y4.appendItem(values.y4);	
+		list.N6_positions_x5.appendItem(values.x5);
+		list.N6_positions_y5.appendItem(values.y5);
+		list.N6_positions_x6.appendItem(values.x6);
+		list.N6_positions_y6.appendItem(values.y6);	
+		
+		//add the randomly generated colors to the corresponding lists
+		list.N6_colors_1.appendItem(values.color1);		
+		list.N6_colors_2.appendItem(values.color2);	
+		list.N6_colors_3.appendItem(values.color3);	
+		list.N6_colors_4.appendItem(values.color4);
+		list.N6_colors_5.appendItem(values.color5);	
+		list.N6_colors_6.appendItem(values.color6);	
+	
+		//add probe color to the corresponding lists
+		list.N6_trialTypes.appendItem(values.trialtype);
+		list.N6_probePosition.appendItem(values.probe);
+		list.N6_probeColor_all.appendItem(values.probeColor);
+		list.N6_probeColor_current.appendItem(values.probeColor2);	
+	}
+]
+/ branch = [
+	if (values.countValid_N6 < 60){
+		return trial.generate_N6;
+	}
+]
+/ trialduration = 0
+/ recorddata = false
+</trial>
+
+
+<trial generate_practiceN8>
+/ ontrialbegin = [
+	values.countTrials += 1;
+	values.repeat = 1;
+	values.valid = 1;	
+	values.countloops2 = 0;//helper variable to get out of potential endless loops
+	
+	while (values.repeat == 1 && values.countloops2 < 500){
+		values.countloops2 += 1;
+	
+		values.repeat = 0;
+		expressions.generateTargetShapePositions_1;
+		expressions.generateTargetShapePositions_2;
+		
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_3;			
+		}
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_4;			
+		}
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_5;			
+		}
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_6;			
+		}		
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_7;			
+		}		
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_8;			
+		}		
+	}
+
+	//proportional coordinates:
+	values.x1 = display.getpercentx(values.x1_px);
+	values.y1 = display.getpercenty(values.y1_px);
+	values.x2 = display.getpercentx(values.x2_px);
+	values.y2 = display.getpercenty(values.y2_px);
+	values.x3 = display.getpercentx(values.x3_px);
+	values.y3 = display.getpercenty(values.y3_px);
+	values.x4 = display.getpercentx(values.x4_px);
+	values.y4 = display.getpercenty(values.y4_px);
+	values.x5 = display.getpercentx(values.x5_px);
+	values.y5 = display.getpercenty(values.y5_px);
+	values.x6 = display.getpercentx(values.x6_px);
+	values.y6 = display.getpercenty(values.y6_px);
+	values.x7 = display.getpercentx(values.x7_px);
+	values.y7 = display.getpercenty(values.y7_px);
+	values.x8 = display.getpercentx(values.x8_px);
+	values.y8 = display.getpercenty(values.y8_px);	
+
+	if (values.countloops2 >= 500){
+		values.valid = 0; //script would have been caught in an endless loop
+	} else {
+		list.colors.reset();
+		values.avoid = "";
+		values.color1 = list.colors.nextValue;
+		values.color2 = list.colors.nextValue;
+		values.color3 = list.colors.nextValue;	
+		values.color4 = list.colors.nextValue;	
+		values.color5 = list.colors.nextValue;	
+		values.color6 = list.colors.nextValue;	
+		values.color7 = list.colors.nextValue;
+		values.color8 = list.colors.nextValue;	
+		list.currentColors.reset();
+		list.currentColors.appendItem(values.color1);
+		list.currentColors.appendItem(values.color2);
+		list.currentColors.appendItem(values.color3);
+		list.currentColors.appendItem(values.color4);
+		list.currentColors.appendItem(values.color5);
+		list.currentColors.appendItem(values.color6);
+		list.currentColors.appendItem(values.color7);
+		list.currentColors.appendItem(values.color8);	
+	
+		values.trialtype = list.practiceN8_trialtype.nextValue;
+		values.probe = list.N8_probepositions.nextValue;
+		if (values.trialtype == 1){
+			if (values.probe == 1){
+				values.probeColor = values.color1;
+			} else if (values.probe == 2){
+				values.probeColor = values.color2;
+			} else if (values.probe == 3){
+				values.probeColor = values.color3;
+			} else if (values.probe == 4){
+				values.probeColor = values.color4;
+			} else if (values.probe == 5){
+				values.probeColor = values.color5;
+			} else if (values.probe == 6){
+				values.probeColor = values.color6;
+			} else if (values.probe == 7){
+				values.probeColor = values.color7;
+			} else if (values.probe == 8){
+				values.probeColor = values.color8;
+			}
+			values.probeColor2 = values.probeColor;
+		} else {
+			if (values.probe == 1){
+				values.avoid = values.color1;
+			} else if (values.probe == 2){
+				values.avoid = values.color2;
+			} else if (values.probe == 3){
+				values.avoid = values.color3;
+			} else if (values.probe == 4){
+				values.avoid = values.color4;
+			} else if (values.probe == 5){
+				values.avoid = values.color5;
+			} else if (values.probe == 6){
+				values.avoid = values.color6;
+			} else if (values.probe == 7){
+				values.avoid = values.color7;
+			} else if (values.probe == 8){
+				values.avoid = values.color8;
+			}
+			list.colors.reset();
+			values.probeColor = list.colors.nextValue;
+			values.probeColor2 = list.currentColors.nextValue;
+		}
+	}
+]
+/ stimulusframes = [1 = clearScreen, wait]
+/ ontrialend = [
+	if (values.valid == 1){
+		values.countValid_practiceN8 += 1;
+		
+		//add the randomly generated X and y coordinates to the corresponding lists
+		list.practiceN8_positions_x1.appendItem(values.x1);
+		list.practiceN8_positions_y1.appendItem(values.y1);
+		list.practiceN8_positions_x2.appendItem(values.x2);
+		list.practiceN8_positions_y2.appendItem(values.y2);	
+		list.practiceN8_positions_x3.appendItem(values.x3);
+		list.practiceN8_positions_y3.appendItem(values.y3);	
+		list.practiceN8_positions_x4.appendItem(values.x4);
+		list.practiceN8_positions_y4.appendItem(values.y4);	
+		list.practiceN8_positions_x5.appendItem(values.x5);
+		list.practiceN8_positions_y5.appendItem(values.y5);
+		list.practiceN8_positions_x6.appendItem(values.x6);
+		list.practiceN8_positions_y6.appendItem(values.y6);	
+		list.practiceN8_positions_x7.appendItem(values.x7);
+		list.practiceN8_positions_y7.appendItem(values.y7);	
+		list.practiceN8_positions_x8.appendItem(values.x8);
+		list.practiceN8_positions_y8.appendItem(values.y8);
+		
+		//add the randomly generated colors to the corresponding lists
+		list.practiceN8_colors_1.appendItem(values.color1);		
+		list.practiceN8_colors_2.appendItem(values.color2);	
+		list.practiceN8_colors_3.appendItem(values.color3);	
+		list.practiceN8_colors_4.appendItem(values.color4);
+		list.practiceN8_colors_5.appendItem(values.color5);	
+		list.practiceN8_colors_6.appendItem(values.color6);	
+		list.practiceN8_colors_7.appendItem(values.color7);	
+		list.practiceN8_colors_8.appendItem(values.color8);	
+	
+		//add probe color to the corresponding lists
+		list.practiceN8_trialTypes.appendItem(values.trialtype);
+		list.practiceN8_probePosition.appendItem(values.probe);
+		list.practiceN8_probeColor_all.appendItem(values.probeColor);
+		list.practiceN8_probeColor_current.appendItem(values.probeColor2);	
+	}
+]
+/ branch = [
+	if (values.countValid_practiceN8 < 6){
+		return trial.generate_practiceN8;
+	}
+]
+/ trialduration = 0
+/ recorddata = false
+</trial>
+
+<trial generate_N8>
+/ ontrialbegin = [
+	values.countTrials += 1;
+	values.repeat = 1;
+	values.valid = 1;	
+	values.countloops2 = 0;//helper variable to get out of potential endless loops
+	
+	while (values.repeat == 1 && values.countloops2 < 500){
+		values.countloops2 += 1;
+	
+		values.repeat = 0;
+		expressions.generateTargetShapePositions_1;
+		expressions.generateTargetShapePositions_2;
+		
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_3;			
+		}
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_4;			
+		}
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_5;			
+		}
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_6;			
+		}		
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_7;			
+		}		
+		if (values.repeat == 0){
+			expressions.generateTargetShapePositions_8;			
+		}		
+	}
+
+	//proportional coordinates:
+	values.x1 = display.getpercentx(values.x1_px);
+	values.y1 = display.getpercenty(values.y1_px);
+	values.x2 = display.getpercentx(values.x2_px);
+	values.y2 = display.getpercenty(values.y2_px);
+	values.x3 = display.getpercentx(values.x3_px);
+	values.y3 = display.getpercenty(values.y3_px);
+	values.x4 = display.getpercentx(values.x4_px);
+	values.y4 = display.getpercenty(values.y4_px);
+	values.x5 = display.getpercentx(values.x5_px);
+	values.y5 = display.getpercenty(values.y5_px);
+	values.x6 = display.getpercentx(values.x6_px);
+	values.y6 = display.getpercenty(values.y6_px);
+	values.x7 = display.getpercentx(values.x7_px);
+	values.y7 = display.getpercenty(values.y7_px);
+	values.x8 = display.getpercentx(values.x8_px);
+	values.y8 = display.getpercenty(values.y8_px);	
+
+	if (values.countloops2 >= 500){
+		values.valid = 0; //script would have been caught in an endless loop
+	} else {
+		list.colors.reset();
+		values.avoid = "";
+		values.color1 = list.colors.nextValue;
+		values.color2 = list.colors.nextValue;
+		values.color3 = list.colors.nextValue;	
+		values.color4 = list.colors.nextValue;	
+		values.color5 = list.colors.nextValue;	
+		values.color6 = list.colors.nextValue;	
+		values.color7 = list.colors.nextValue;
+		values.color8 = list.colors.nextValue;	
+		list.currentColors.reset();
+		list.currentColors.appendItem(values.color1);
+		list.currentColors.appendItem(values.color2);
+		list.currentColors.appendItem(values.color3);
+		list.currentColors.appendItem(values.color4);
+		list.currentColors.appendItem(values.color5);
+		list.currentColors.appendItem(values.color6);
+		list.currentColors.appendItem(values.color7);
+		list.currentColors.appendItem(values.color8);	
+	
+		values.trialtype = list.N8_trialtype.nextValue;
+		values.probe = list.N8_probepositions.nextValue;
+		if (values.trialtype == 1){
+			if (values.probe == 1){
+				values.probeColor = values.color1;
+			} else if (values.probe == 2){
+				values.probeColor = values.color2;
+			} else if (values.probe == 3){
+				values.probeColor = values.color3;
+			} else if (values.probe == 4){
+				values.probeColor = values.color4;
+			} else if (values.probe == 5){
+				values.probeColor = values.color5;
+			} else if (values.probe == 6){
+				values.probeColor = values.color6;
+			} else if (values.probe == 7){
+				values.probeColor = values.color7;
+			} else if (values.probe == 8){
+				values.probeColor = values.color8;
+			}
+			values.probeColor2 = values.probeColor;
+		} else {
+			if (values.probe == 1){
+				values.avoid = values.color1;
+			} else if (values.probe == 2){
+				values.avoid = values.color2;
+			} else if (values.probe == 3){
+				values.avoid = values.color3;
+			} else if (values.probe == 4){
+				values.avoid = values.color4;
+			} else if (values.probe == 5){
+				values.avoid = values.color5;
+			} else if (values.probe == 6){
+				values.avoid = values.color6;
+			} else if (values.probe == 7){
+				values.avoid = values.color7;
+			} else if (values.probe == 8){
+				values.avoid = values.color8;
+			}
+			list.colors.reset();
+			values.probeColor = list.colors.nextValue;
+			values.probeColor2 = list.currentColors.nextValue;
+		}
+	}
+]
+/ stimulusframes = [1 = clearScreen, wait]
+/ ontrialend = [
+	if (values.valid == 1){
+		values.countValid_N8 += 1;
+		
+		//add the randomly generated X and y coordinates to the corresponding lists
+		list.N8_positions_x1.appendItem(values.x1);
+		list.N8_positions_y1.appendItem(values.y1);
+		list.N8_positions_x2.appendItem(values.x2);
+		list.N8_positions_y2.appendItem(values.y2);	
+		list.N8_positions_x3.appendItem(values.x3);
+		list.N8_positions_y3.appendItem(values.y3);	
+		list.N8_positions_x4.appendItem(values.x4);
+		list.N8_positions_y4.appendItem(values.y4);	
+		list.N8_positions_x5.appendItem(values.x5);
+		list.N8_positions_y5.appendItem(values.y5);
+		list.N8_positions_x6.appendItem(values.x6);
+		list.N8_positions_y6.appendItem(values.y6);	
+		list.N8_positions_x7.appendItem(values.x7);
+		list.N8_positions_y7.appendItem(values.y7);	
+		list.N8_positions_x8.appendItem(values.x8);
+		list.N8_positions_y8.appendItem(values.y8);
+		
+		//add the randomly generated colors to the corresponding lists
+		list.N8_colors_1.appendItem(values.color1);		
+		list.N8_colors_2.appendItem(values.color2);	
+		list.N8_colors_3.appendItem(values.color3);	
+		list.N8_colors_4.appendItem(values.color4);
+		list.N8_colors_5.appendItem(values.color5);	
+		list.N8_colors_6.appendItem(values.color6);	
+		list.N8_colors_7.appendItem(values.color7);	
+		list.N8_colors_8.appendItem(values.color8);	
+	
+		//add probe color to the corresponding lists
+		list.N8_trialTypes.appendItem(values.trialtype);
+		list.N8_probePosition.appendItem(values.probe);
+		list.N8_probeColor_all.appendItem(values.probeColor);
+		list.N8_probeColor_current.appendItem(values.probeColor2);	
+	}
+]
+/ branch = [
+	if (values.countValid_N8 < 60){
+		return trial.generate_N8;
+	}
+]
+/ trialduration = 0
+/ recorddata = false
+</trial>
+
+	//proportional coordinates:
+	values.x1 = round(display.getpercentx(values.x1_px));
+	values.y1 = round(display.getpercenty(values.y1_px));
+	values.x2 = round(display.getpercentx(values.x2_px));
+	values.y2 = round(display.getpercenty(values.y2_px));
+	values.x3 = round(display.getpercentx(values.x3_px));
+	values.y3 = round(display.getpercenty(values.y3_px));
+	values.x4 = round(display.getpercentx(values.x4_px));
+	values.y4 = round(display.getpercenty(values.y4_px));
+	values.x5 = round(display.getpercentx(values.x5_px));
+	values.y5 = round(display.getpercenty(values.y5_px));
+	values.x6 = round(display.getpercentx(values.x6_px));
+	values.y6 = round(display.getpercenty(values.y6_px));
+	values.x7 = round(display.getpercentx(values.x7_px));
+	values.y7 = round(display.getpercenty(values.y7_px));
+	values.x8 = round(display.getpercentx(values.x8_px));
+	values.y8 = round(display.getpercenty(values.y8_px));
+
+**************************************************************************************************************
+**************************************************************************************************************
+	BLOCKS
+**************************************************************************************************************
+**************************************************************************************************************
+
+<block generate_practiceN4>
+/ skip = [
+	parameters.runFixedDesign == true;
+]
+/ onblockbegin = [
+	list.practiceN4_trialtype.reset();
+	list.N4_probepositions.reset();
+	
+	//empty out the followin default lists
+	list.practiceN4_positions_x1.clearItems();
+	list.practiceN4_positions_x2.clearItems();	
+	list.practiceN4_positions_x3.clearItems();
+	list.practiceN4_positions_x4.clearItems();	
+	list.practiceN4_positions_y1.clearItems();
+	list.practiceN4_positions_y2.clearItems();	
+	list.practiceN4_positions_y3.clearItems();
+	list.practiceN4_positions_y4.clearItems();
+	
+	list.practiceN4_colors_1.clearItems();	
+	list.practiceN4_colors_2.clearItems();	
+	list.practiceN4_colors_3.clearItems();	
+	list.practiceN4_colors_4.clearItems();	
+	
+	list.practiceN4_trialTypes.clearItems();	
+	list.practiceN4_probePosition.clearItems();	
+	list.practiceN4_probeColor_all.clearItems();	
+	list.practiceN4_probeColor_current.clearItems();		
+]
+/ trials = [1 = generate_practiceN4]
+</block>
+
+<block generate_N4>
+/ skip = [
+	parameters.runFixedDesign == true;
+]
+/ onblockbegin = [
+	list.N4_trialtype.reset();
+	list.N4_probepositions.reset();
+	
+	//empty out the followin default lists
+	list.N4_positions_x1.clearItems();
+	list.N4_positions_x2.clearItems();	
+	list.N4_positions_x3.clearItems();
+	list.N4_positions_x4.clearItems();
+	list.N4_positions_y1.clearItems();
+	list.N4_positions_y2.clearItems();	
+	list.N4_positions_y3.clearItems();
+	list.N4_positions_y4.clearItems();
+	
+	list.N4_colors_1.clearItems();	
+	list.N4_colors_2.clearItems();	
+	list.N4_colors_3.clearItems();	
+	list.N4_colors_4.clearItems();	
+	
+	list.N4_trialTypes.clearItems();	
+	list.N4_probePosition.clearItems();	
+	list.N4_probeColor_all.clearItems();	
+	list.N4_probeColor_current.clearItems();		
+]
+/ trials = [1 = generate_N4]
+</block>
+
+<block generate_practiceN6>
+/ skip = [
+	parameters.runFixedDesign == true;
+]
+/ onblockbegin = [
+	list.practiceN6_trialtype.reset();
+	list.N6_probepositions.reset();
+	
+	//empty out the followin default lists
+	list.practiceN6_positions_x1.clearItems();
+	list.practiceN6_positions_x2.clearItems();	
+	list.practiceN6_positions_x3.clearItems();
+	list.practiceN6_positions_x4.clearItems();
+	list.practiceN6_positions_x5.clearItems();
+	list.practiceN6_positions_x6.clearItems();	
+	list.practiceN6_positions_y1.clearItems();
+	list.practiceN6_positions_y2.clearItems();	
+	list.practiceN6_positions_y3.clearItems();
+	list.practiceN6_positions_y4.clearItems();
+	list.practiceN6_positions_y5.clearItems();
+	list.practiceN6_positions_y6.clearItems();	
+	
+	list.practiceN6_colors_1.clearItems();	
+	list.practiceN6_colors_2.clearItems();	
+	list.practiceN6_colors_3.clearItems();	
+	list.practiceN6_colors_4.clearItems();	
+	list.practiceN6_colors_5.clearItems();	
+	list.practiceN6_colors_6.clearItems();		
+	
+	list.practiceN6_trialTypes.clearItems();	
+	list.practiceN6_probePosition.clearItems();	
+	list.practiceN6_probeColor_all.clearItems();	
+	list.practiceN6_probeColor_current.clearItems();		
+]
+/ trials = [1 = generate_practiceN6]
+</block>
+
+<block generate_N6>
+/ skip = [
+	parameters.runFixedDesign == true;
+]
+
+/ onblockbegin = [
+	list.N6_trialtype.reset();
+	list.N6_probepositions.reset();
+	
+	//empty out the followin default lists
+	list.N6_positions_x1.clearItems();
+	list.N6_positions_x2.clearItems();	
+	list.N6_positions_x3.clearItems();
+	list.N6_positions_x4.clearItems();
+	list.N6_positions_x5.clearItems();
+	list.N6_positions_x6.clearItems();	
+	list.N6_positions_y1.clearItems();
+	list.N6_positions_y2.clearItems();	
+	list.N6_positions_y3.clearItems();
+	list.N6_positions_y4.clearItems();
+	list.N6_positions_y5.clearItems();
+	list.N6_positions_y6.clearItems();	
+	
+	list.N6_colors_1.clearItems();	
+	list.N6_colors_2.clearItems();	
+	list.N6_colors_3.clearItems();	
+	list.N6_colors_4.clearItems();	
+	list.N6_colors_5.clearItems();	
+	list.N6_colors_6.clearItems();			
+	
+	list.N6_trialTypes.clearItems();	
+	list.N6_probePosition.clearItems();	
+	list.N6_probeColor_all.clearItems();	
+	list.N6_probeColor_current.clearItems();		
+]
+/ trials = [1 = generate_N6]
+</block>
+
+
+<block generate_practiceN8>
+/ skip = [
+	parameters.runFixedDesign == true;
+]
+/ onblockbegin = [
+	list.practiceN8_trialtype.reset();
+	list.N8_probepositions.reset();
+	
+	//empty out the followin default lists
+	list.practiceN8_positions_x1.clearItems();
+	list.practiceN8_positions_x2.clearItems();	
+	list.practiceN8_positions_x3.clearItems();
+	list.practiceN8_positions_x4.clearItems();
+	list.practiceN8_positions_x5.clearItems();
+	list.practiceN8_positions_x6.clearItems();	
+	list.practiceN8_positions_x7.clearItems();
+	list.practiceN8_positions_x8.clearItems();	
+	list.practiceN8_positions_y1.clearItems();
+	list.practiceN8_positions_y2.clearItems();	
+	list.practiceN8_positions_y3.clearItems();
+	list.practiceN8_positions_y4.clearItems();
+	list.practiceN8_positions_y5.clearItems();
+	list.practiceN8_positions_y6.clearItems();	
+	list.practiceN8_positions_y7.clearItems();
+	list.practiceN8_positions_y8.clearItems();	
+	
+	list.practiceN8_colors_1.clearItems();	
+	list.practiceN8_colors_2.clearItems();	
+	list.practiceN8_colors_3.clearItems();	
+	list.practiceN8_colors_4.clearItems();	
+	list.practiceN8_colors_5.clearItems();	
+	list.practiceN8_colors_6.clearItems();		
+	list.practiceN8_colors_7.clearItems();	
+	list.practiceN8_colors_8.clearItems();	
+	
+	list.practiceN8_trialTypes.clearItems();	
+	list.practiceN8_probePosition.clearItems();	
+	list.practiceN8_probeColor_all.clearItems();	
+	list.practiceN8_probeColor_current.clearItems();		
+]
+/ trials = [1 = generate_practiceN8]
+</block>
+
+<block generate_N8>
+/ skip = [
+	parameters.runFixedDesign == true;
+]
+
+/ onblockbegin = [
+	list.N8_trialtype.reset();
+	list.N8_probepositions.reset();
+	
+	//empty out the followin default lists
+	list.N8_positions_x1.clearItems();
+	list.N8_positions_x2.clearItems();	
+	list.N8_positions_x3.clearItems();
+	list.N8_positions_x4.clearItems();
+	list.N8_positions_x5.clearItems();
+	list.N8_positions_x6.clearItems();	
+	list.N8_positions_x7.clearItems();
+	list.N8_positions_x8.clearItems();	
+	list.N8_positions_y1.clearItems();
+	list.N8_positions_y2.clearItems();	
+	list.N8_positions_y3.clearItems();
+	list.N8_positions_y4.clearItems();
+	list.N8_positions_y5.clearItems();
+	list.N8_positions_y6.clearItems();	
+	list.N8_positions_y7.clearItems();
+	list.N8_positions_y8.clearItems();	
+	
+	list.N8_colors_1.clearItems();	
+	list.N8_colors_2.clearItems();	
+	list.N8_colors_3.clearItems();	
+	list.N8_colors_4.clearItems();	
+	list.N8_colors_5.clearItems();	
+	list.N8_colors_6.clearItems();		
+	list.N8_colors_7.clearItems();	
+	list.N8_colors_8.clearItems();	
+	
+	list.N8_trialTypes.clearItems();	
+	list.N8_probePosition.clearItems();	
+	list.N8_probeColor_all.clearItems();	
+	list.N8_probeColor_current.clearItems();		
+]
+/ trials = [1 = generate_N8]
+</block>
+
+
+**************************************************************************************************************
+												End of File
+**************************************************************************************************************
