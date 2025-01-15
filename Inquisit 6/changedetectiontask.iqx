@@ -688,7 +688,8 @@ values.x8, values.y8,
 values.color1, values.color2, values.color3, values.color4,
 values.color5, values.color6, values.color7, values.color8,
 values.probe, values.probe_x, values.probe_y, values.probeColor,
-
+values.videoName,
+values.videoSequence,
 //Square Distance Checks:
 expressions.buffer_inpx, expressions.buffer_inmm,
 expressions.minDist_inpx, expressions.minDist_inmm,
@@ -714,7 +715,8 @@ script.subjectId, script.groupId, script.sessionId,
 script.elapsedTime, script.completed, 
 parameters.runFixedDesign, parameters.useOnlyArrayColorsForProbe,
 parameters.presentationSquareHeight, parameters.squareHeight, expressions.squareHeight_inmm,expressions.squareDistanceCheck,
-
+values.videoName,
+values.videoSequence,
 expressions.propCorrect, expressions.meanCorrRT,
 expressions.K4, expressions.N4_hitrate, expressions.N4_hit_RT, expressions.N4_CRrate, expressions.N4_CR_RT,
 expressions.K6, expressions.N6_hitrate, expressions.N6_hit_RT, expressions.N6_CRrate, expressions.N6_CR_RT,
@@ -723,7 +725,7 @@ expressions.K_overall)
 </summarydata>
 
 **************************************************************************************************************
-**************************************************************************************************************
+********************************* *****************************************************************************
 	VALUES: automatically updated
 **************************************************************************************************************
 **************************************************************************************************************
@@ -769,6 +771,9 @@ expressions.K_overall)
 
 / responseCategory = ""
 / validDistance = ""
+
+/ videoName = ""
+/ videoSequence = 0
 </values>
 
 **************************************************************************************************************
@@ -4061,16 +4066,16 @@ Test N = 8
 **************************************************************************************************************
 <video naturalVideo>
 / items = (
-"..\\Videos To Use\\Nature\\Nat_2.mp4", 
-"..\\Videos To Use\\Nature\\Nat_3.mp4",
-"..\\Videos To Use\\Nature\\Nat_8.mp4",
-"..\\Videos To Use\\Nature\\Nat_14.mp4",
-"..\\Videos To Use\\Nature\\Nat_15.mp4",
-"..\\Videos To Use\\Nature\\Nat_16.mp4",
-"..\\Videos To Use\\Nature\\Nat_18.mp4",
-"..\\Videos To Use\\Nature\\Nat_Stat_5.mp4",
-"..\\Videos To Use\\Nature\\Nat_Stat_6.mp4",
-"..\\Videos To Use\\Nature\\Nat_Stat_7.mp4"
+"Videos To Use\\Nature\\Nat_2.mp4", 
+"Videos To Use\\Nature\\Nat_3.mp4",
+"Videos To Use\\Nature\\Nat_8.mp4",
+"Videos To Use\\Nature\\Nat_14.mp4",
+"Videos To Use\\Nature\\Nat_15.mp4",
+"Videos To Use\\Nature\\Nat_16.mp4",
+"Videos To Use\\Nature\\Nat_18.mp4",
+"Videos To Use\\Nature\\Nat_Stat_5.mp4",
+"Videos To Use\\Nature\\Nat_Stat_6.mp4",
+"Videos To Use\\Nature\\Nat_Stat_7.mp4"
 )
 / size = (80%, 80%)
 / position = (50%, 50%)
@@ -4096,10 +4101,24 @@ Test N = 8
 </video>
 
 <trial videoBreak>
-/ ontrialbegin = [{
-		video.naturalVideo.skip = ( script.groupId == 1);
-    video.urbanVideo.skip = (script.groupId == 2);
-}]
+/ ontrialbegin = [
+    values.videoSequence += 1;
+    if (script.groupId == 1) {
+        video.naturalVideo.skip = false;
+        video.urbanVideo.skip = true;
+        // Get current video name from natural videos
+        values.videoName = video.naturalVideo.currentitem;
+    } else {
+        video.naturalVideo.skip = true;
+        video.urbanVideo.skip = false;
+        // Get current video name from urban videos 
+        values.videoName = video.urbanVideo.currentitem;
+    }
+]
+/ timeout = 0
+/ stimulusframes = [1 = naturalVideo, urbanVideo]
+/ recorddata = true
+</trial>
 
 / timeout = 0
 / stimulusframes = [1 = naturalVideo, urbanVideo]
